@@ -37,7 +37,7 @@ const BlogList = () => {
         <div key={blog._id} className="bg-white p-6 rounded shadow-md">
           {blog.image && (
             <img
-              src={`http://localhost:5000/uploads/${blog.image}`}
+              src={`https://ecell-blog-project.onrender.com/uploads/${blog.image}`}
               alt={blog.title}
               className="w-full h-64 object-cover rounded mb-4"
             />

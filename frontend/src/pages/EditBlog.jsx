@@ -102,7 +102,7 @@ const EditBlog = () => {
         {/* Existing image */}
         {currentImage && !preview && (
           <img
-            src={`${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:5000'}${currentImage}`}
+            src={`${process.env.REACT_APP_API_URL?.replace('/api', '') || 'https://ecell-blog-project.onrender.com'}${currentImage}`}
             alt="Current"
             className="w-full h-48 object-cover rounded mb-2"
           />
