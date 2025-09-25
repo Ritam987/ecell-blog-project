@@ -8,9 +8,6 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
-    rollupOptions: {
-      input: './public/index.html'
-    },
   },
   server: {
     port: 5173,
