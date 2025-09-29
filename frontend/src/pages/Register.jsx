@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../utils/api";
 
-export default function Register() {
+export default function Register({ setAppUser }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -18,8 +18,11 @@ export default function Register() {
       localStorage.setItem("user", JSON.stringify(user));
       localStorage.setItem("token", token);
 
-      navigate("/"); 
-      window.location.reload(); // force Navbar to re-render immediately
+      // Update parent state if needed (Navbar will re-render immediately)
+      if (setAppUser) setAppUser(user);
+
+      // Navigate to home page
+      navigate("/");
     } catch (err) {
       alert(err.response?.data?.message || "Registration failed");
     }
@@ -63,5 +66,3 @@ export default function Register() {
     </div>
   );
 }
-
-
