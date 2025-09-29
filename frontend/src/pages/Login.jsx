@@ -1,53 +1,50 @@
-import React, { useState } from "react";
-import API from "../utils/api";
-import { setToken } from "../utils/auth";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useContext } from "react"
+import { useNavigate } from "react-router-dom"
+import api from "../api"
+import { AuthContext } from "../context/AuthContext"
 
-const Login = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const navigate = useNavigate();
+export default function Login() {
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const { login } = useContext(AuthContext)
+  const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
     try {
-      const res = await API.post("/auth/login", { email, password });
-      setToken(res.data.token, res.data.user);
-      navigate("/");
+      const res = await api.post("/auth/login", { email, password })
+      login(res.data)
+      navigate("/")
     } catch (err) {
-      alert(err.response?.data?.message || "Login failed");
+      alert("Invalid credentials")
     }
-  };
+  }
 
   return (
-    <div className="max-w-md mx-auto mt-10 bg-white p-6 shadow-md rounded-md">
-      <h1 className="text-2xl font-bold mb-4">Login</h1>
+    <div className="container mx-auto p-4 max-w-md">
+      <h1 className="text-xl font-bold mb-4">Login</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
           type="email"
           placeholder="Email"
+          className="w-full p-2 border rounded"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full border p-2 rounded"
-          required
         />
         <input
           type="password"
           placeholder="Password"
+          className="w-full p-2 border rounded"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full border p-2 rounded"
-          required
         />
         <button
           type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
         >
           Login
         </button>
       </form>
     </div>
-  );
-};
-
-export default Login;
+  )
+}
