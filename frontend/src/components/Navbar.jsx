@@ -2,19 +2,18 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 export default function Navbar() {
-  const navigate = useNavigate();
   const [user, setUser] = useState(null);
+  const navigate = useNavigate();
 
-  // Check localStorage for logged-in user on mount
   useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem("user"));
-    setUser(storedUser);
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) setUser(JSON.parse(storedUser));
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
     localStorage.removeItem("user");
-    setUser(null); // immediately update navbar
+    localStorage.removeItem("token");
+    setUser(null); // immediately update state
     navigate("/login");
   };
 
@@ -28,7 +27,7 @@ export default function Navbar() {
             <>
               <Link to="/create">Create Post</Link>
               <Link to="/admin">Admin</Link>
-              <button
+              <button 
                 onClick={handleLogout}
                 className="bg-red-500 px-3 py-1 rounded hover:bg-red-600"
               >
@@ -46,4 +45,3 @@ export default function Navbar() {
     </nav>
   );
 }
-
