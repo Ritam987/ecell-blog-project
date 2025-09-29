@@ -1,80 +1,65 @@
 import React, { useState } from "react";
-import API from "../utils/api";
 import { useNavigate } from "react-router-dom";
+import API from "../utils/api";
 
-const Register = () => {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-  });
-  const [loading, setLoading] = useState(false);
+export default function Register() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
-    setLoading(true);
-
     try {
-      const res = await API.post("/auth/register", formData);
+      const res = await API.post("/auth/register", { name, email, password });
+      const { user, token } = res.data;
 
-      // Store user and token in localStorage
-      localStorage.setItem("user", JSON.stringify(res.data.user));
-      localStorage.setItem("token", res.data.token);
+      // Save to localStorage
+      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("token", token);
 
-      setLoading(false);
-      navigate("/"); // Redirect to Home
+      navigate("/"); 
+      window.location.reload(); // force Navbar to re-render immediately
     } catch (err) {
-      setLoading(false);
       alert(err.response?.data?.message || "Registration failed");
     }
   };
 
   return (
-    <div className="container mx-auto p-4 max-w-md">
-      <h1 className="text-2xl font-bold mb-4">Register</h1>
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="max-w-md mx-auto mt-10 p-6 border rounded shadow">
+      <h2 className="text-2xl font-bold mb-4">Register</h2>
+      <form onSubmit={handleRegister} className="space-y-4">
         <input
           type="text"
-          name="name"
           placeholder="Name"
-          value={formData.name}
-          onChange={handleChange}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
           required
           className="w-full p-2 border rounded"
         />
         <input
           type="email"
-          name="email"
           placeholder="Email"
-          value={formData.email}
-          onChange={handleChange}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           required
           className="w-full p-2 border rounded"
         />
         <input
           type="password"
-          name="password"
           placeholder="Password"
-          value={formData.password}
-          onChange={handleChange}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
           required
           className="w-full p-2 border rounded"
         />
         <button
           type="submit"
-          disabled={loading}
-          className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700"
+          className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700"
         >
-          {loading ? "Registering..." : "Register"}
+          Register
         </button>
       </form>
     </div>
   );
-};
-
-export default Register;
+}
