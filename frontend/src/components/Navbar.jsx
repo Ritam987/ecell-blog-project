@@ -1,13 +1,20 @@
-import React, { useContext } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { AuthContext } from "../context/AuthContext";
 
 export default function Navbar() {
-  const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+
+  // Check localStorage for logged-in user on mount
+  useEffect(() => {
+    const storedUser = JSON.parse(localStorage.getItem("user"));
+    setUser(storedUser);
+  }, []);
 
   const handleLogout = () => {
-    logout();
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setUser(null); // immediately update navbar
     navigate("/login");
   };
 
@@ -39,3 +46,4 @@ export default function Navbar() {
     </nav>
   );
 }
+
