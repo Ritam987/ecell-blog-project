@@ -1,68 +1,80 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import API from "../utils/api";
+import { useNavigate } from "react-router-dom";
 
-export default function Register({ setAppUser }) {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+const Register = () => {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+  });
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleRegister = async (e) => {
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+
     try {
-      const res = await API.post("/auth/register", { name, email, password });
-      const { user, token } = res.data;
+      const res = await API.post("/auth/register", formData);
 
-      // Save to localStorage
-      localStorage.setItem("user", JSON.stringify(user));
-      localStorage.setItem("token", token);
+      // Store user and token in localStorage
+      localStorage.setItem("user", JSON.stringify(res.data.user));
+      localStorage.setItem("token", res.data.token);
 
-      // Update parent state if needed (Navbar will re-render immediately)
-      if (setAppUser) setAppUser(user);
-
-      // Navigate to home page
-      navigate("/");
+      setLoading(false);
+      navigate("/"); // Redirect to Home
     } catch (err) {
+      setLoading(false);
       alert(err.response?.data?.message || "Registration failed");
     }
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-6 border rounded shadow">
-      <h2 className="text-2xl font-bold mb-4">Register</h2>
-      <form onSubmit={handleRegister} className="space-y-4">
+    <div className="container mx-auto p-4 max-w-md">
+      <h1 className="text-2xl font-bold mb-4">Register</h1>
+      <form onSubmit={handleSubmit} className="space-y-4">
         <input
           type="text"
+          name="name"
           placeholder="Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
+          value={formData.name}
+          onChange={handleChange}
           required
           className="w-full p-2 border rounded"
         />
         <input
           type="email"
+          name="email"
           placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          value={formData.email}
+          onChange={handleChange}
           required
           className="w-full p-2 border rounded"
         />
         <input
           type="password"
+          name="password"
           placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          value={formData.password}
+          onChange={handleChange}
           required
           className="w-full p-2 border rounded"
         />
         <button
           type="submit"
-          className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700"
+          disabled={loading}
+          className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700"
         >
-          Register
+          {loading ? "Registering..." : "Register"}
         </button>
       </form>
     </div>
   );
-}
+};
+
+export default Register;
