@@ -1,62 +1,41 @@
-import React from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { getUser, removeToken } from "../utils/auth";
+import React, { useContext } from "react"
+import { Link, useNavigate } from "react-router-dom"
+import { AuthContext } from "../context/AuthContext"
 
-const Navbar = () => {
-  const navigate = useNavigate();
-  const user = getUser();
+export default function Navbar() {
+  const { user, logout } = useContext(AuthContext)
+  const navigate = useNavigate()
 
   const handleLogout = () => {
-    removeToken();
-    navigate("/login");
-  };
+    logout()
+    navigate("/login")
+  }
 
   return (
-    <nav className="bg-blue-600 text-white px-6 py-4 flex justify-between items-center">
-      <div className="text-2xl font-bold">
-        <Link to="/">E-Cell Blog</Link>
-      </div>
-
-      <div className="flex items-center space-x-4">
-        <Link to="/" className="hover:underline">
-          Home
-        </Link>
-
-        {user && (
-          <>
-            <Link to="/create" className="hover:underline">
-              Create Blog
-            </Link>
-
-            {user.role === "admin" && (
-              <Link to="/admin" className="hover:underline">
-                Admin Panel
-              </Link>
-            )}
-
-            <span className="font-semibold">{user.name}</span>
-            <button
-              onClick={handleLogout}
-              className="bg-red-600 hover:bg-red-700 px-3 py-1 rounded"
-            >
-              Logout
-            </button>
-          </>
-        )}
-
-        {!user && (
-          <>
-            <Link to="/login" className="hover:underline">
-              Login
-            </Link>
-            <Link to="/register" className="hover:underline">
-              Register
-            </Link>
-          </>
-        )}
+    <nav className="bg-blue-600 text-white p-4 shadow-md">
+      <div className="container mx-auto flex justify-between items-center">
+        <Link to="/" className="font-bold text-lg">BlogApp</Link>
+        <div className="flex gap-4">
+          <Link to="/">Home</Link>
+          {user ? (
+            <>
+              <Link to="/create">Create Post</Link>
+              <Link to="/admin">Admin</Link>
+              <button 
+                onClick={handleLogout}
+                className="bg-red-500 px-3 py-1 rounded hover:bg-red-600"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <Link to="/login">Login</Link>
+              <Link to="/register">Register</Link>
+            </>
+          )}
+        </div>
       </div>
     </nav>
-  );
-};
-
-export default Navbar;
+  )
+}
