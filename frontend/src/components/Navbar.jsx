@@ -5,17 +5,15 @@ export default function Navbar() {
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
 
-  // Check localStorage for user on mount
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) setUser(JSON.parse(storedUser));
   }, []);
 
-  // Handle logout
   const handleLogout = () => {
     localStorage.removeItem("user");
     localStorage.removeItem("token");
-    setUser(null); // immediately update navbar
+    setUser(null); // immediately update state
     navigate("/login");
   };
 
@@ -29,7 +27,7 @@ export default function Navbar() {
             <>
               <Link to="/create">Create Post</Link>
               <Link to="/admin">Admin</Link>
-              <button
+              <button 
                 onClick={handleLogout}
                 className="bg-red-500 px-3 py-1 rounded hover:bg-red-600"
               >
