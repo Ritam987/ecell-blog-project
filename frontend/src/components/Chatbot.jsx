@@ -37,9 +37,11 @@ const Chatbot = () => {
   }, [messages]);
 
   return (
-    <div className="fixed bottom-4 right-4 w-80 bg-white shadow-lg rounded-lg border flex flex-col">
+    <div className="fixed bottom-4 right-4 w-80 bg-white shadow-lg rounded-lg border flex flex-col z-50">
       <div className="p-2 bg-blue-600 text-white rounded-t-lg font-semibold">Site Assistant 🤖</div>
-      <div className="flex-1 p-2 overflow-y-auto h-60">
+      
+      {/* Scrollable messages */}
+      <div className="flex-1 p-2 overflow-y-auto max-h-60">
         {messages.map((m, i) => (
           <div key={i} className={`mb-2 ${m.from === "bot" ? "text-left" : "text-right"}`}>
             <span
@@ -53,6 +55,8 @@ const Chatbot = () => {
         ))}
         <div ref={chatEndRef} />
       </div>
+
+      {/* Input area */}
       <div className="flex border-t">
         <input
           type="text"
