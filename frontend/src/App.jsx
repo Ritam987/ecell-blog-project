@@ -13,6 +13,9 @@ import EditBlog from "./pages/EditBlog"; // Edit Blog page
 import BlogDetails from "./pages/BlogDetails";
 import AdminPanel from "./pages/AdminPanel";
 
+// Chatbot
+import Chatbot from "./components/Chatbot";
+
 function App() {
   return (
     <BrowserRouter>
@@ -24,11 +27,13 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/create" element={<CreateBlog />} />
           <Route path="/blog/:id" element={<BlogDetails />} />
-          <Route path="/blog/:id/edit" element={<EditBlog />} /> {/* New Edit Route */}
+          <Route path="/blog/:id/edit" element={<EditBlog />} /> {/* Edit Route */}
           <Route path="/admin" element={<AdminPanel />} />
         </Routes>
       </div>
       <Footer />
+      {/* Chatbot Widget */}
+      <Chatbot />
     </BrowserRouter>
   );
 }
