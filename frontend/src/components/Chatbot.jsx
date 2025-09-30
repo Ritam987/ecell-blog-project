@@ -1,58 +1,63 @@
 import React, { useState } from "react";
-import API from "../utils/api";
-import { getToken } from "../utils/auth";
 
 const Chatbot = () => {
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState([
+    { from: "bot", text: "Hello! I am your assistant 🤖. How can I help you?" },
+  ]);
   const [input, setInput] = useState("");
 
-  const handleSend = async () => {
+  // Simple rule-based responses
+  const getResponse = (msg) => {
+    msg = msg.toLowerCase();
+    if (msg.includes("login")) return "To login, click on the Login page from the top navbar.";
+    if (msg.includes("register")) return "To register, click on the Register page and fill in the details.";
+    if (msg.includes("logout")) return "To logout, click the Logout button in the Navbar after login.";
+    if (msg.includes("edit blog")) return "If you are the author, you can go to the blog details page and click the Edit button.";
+    if (msg.includes("delete blog")) return "Authors can delete their blog using the Delete button in the blog details or homepage.";
+    if (msg.includes("read full blog")) return "Click on 'Read More' on the blog card to read the full content.";
+    return "Sorry, I can only help with site navigation and blog actions for now.";
+  };
+
+  const handleSend = () => {
     if (!input.trim()) return;
-
-    const userMessage = { role: "user", content: input };
-    setMessages([...messages, userMessage]);
+    const userMsg = { from: "user", text: input };
+    const botMsg = { from: "bot", text: getResponse(input) };
+    setMessages((prev) => [...prev, userMsg, botMsg]);
     setInput("");
+  };
 
-    try {
-      const res = await API.post(
-        "/chatbot",
-        { message: input },
-        { headers: { Authorization: `Bearer ${getToken()}` } }
-      );
-      setMessages((prev) => [...prev, { role: "assistant", content: res.data.reply }]);
-    } catch (err) {
-      alert(err.response?.data?.message || "Error sending message");
-    }
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter") handleSend();
   };
 
   return (
-    <div className="fixed bottom-4 right-4 w-80 bg-white shadow-lg rounded-lg p-4 flex flex-col">
-      <h2 className="text-xl font-bold mb-2">Site Assistant 🤖</h2>
-      <div className="flex-1 overflow-y-auto mb-2 space-y-2 h-60 border p-2 rounded">
-        {messages.map((msg, idx) => (
-          <div key={idx} className={msg.role === "user" ? "text-right" : "text-left"}>
+    <div className="fixed bottom-4 right-4 w-80 bg-white shadow-lg rounded-lg border flex flex-col">
+      <div className="p-2 bg-blue-600 text-white rounded-t-lg font-semibold">Site Assistant 🤖</div>
+      <div className="flex-1 p-2 overflow-y-auto h-60">
+        {messages.map((m, i) => (
+          <div key={i} className={`mb-2 ${m.from === "bot" ? "text-left" : "text-right"}`}>
             <span
-              className={`inline-block p-2 rounded ${
-                msg.role === "user" ? "bg-blue-600 text-white" : "bg-gray-200"
+              className={`inline-block p-2 rounded-lg ${
+                m.from === "bot" ? "bg-gray-200 text-black" : "bg-blue-600 text-white"
               }`}
             >
-              {msg.content}
+              {m.text}
             </span>
           </div>
         ))}
       </div>
-      <div className="flex space-x-2">
+      <div className="flex border-t">
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          className="flex-1 border p-2 rounded"
-          placeholder="Ask me..."
-          onKeyDown={(e) => e.key === "Enter" && handleSend()}
+          onKeyPress={handleKeyPress}
+          placeholder="Type your message..."
+          className="flex-1 p-2 border-none focus:outline-none rounded-bl-lg"
         />
         <button
           onClick={handleSend}
-          className="bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700"
+          className="bg-blue-600 text-white px-4 rounded-br-lg hover:bg-blue-700"
         >
           Send
         </button>
