@@ -20,14 +20,23 @@ export default function Navbar() {
   return (
     <nav className="bg-blue-600 text-white p-4 shadow-md">
       <div className="container mx-auto flex justify-between items-center">
-        <Link to="/" className="font-bold text-lg">BlogApp</Link>
+        <Link to="/" className="font-bold text-lg flex items-center gap-2">
+          {/* Logo before the text */}
+          <img
+            src="/logo.png"        // <-- Replace with your logo path
+            alt="Logo"
+            className="w-8 h-8"
+          />
+          BlogApp
+        </Link>
+
         <div className="flex gap-4">
           <Link to="/">Home</Link>
           {user ? (
             <>
               <Link to="/create">Create Post</Link>
               <Link to="/admin">Admin</Link>
-              <button 
+              <button
                 onClick={handleLogout}
                 className="bg-red-500 px-3 py-1 rounded hover:bg-red-600"
               >
@@ -45,3 +54,4 @@ export default function Navbar() {
     </nav>
   );
 }
+
