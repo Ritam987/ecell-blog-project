@@ -11,12 +11,12 @@ const CreateBlog = () => {
   const [preview, setPreview] = useState(null);
   const navigate = useNavigate();
 
-  // Handle image preview
+  // Handle image selection and preview
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       setImage(file);
-      setPreview(URL.createObjectURL(file));
+      setPreview(URL.createObjectURL(file)); // show preview
     } else {
       setImage(null);
       setPreview(null);
@@ -34,20 +34,24 @@ const CreateBlog = () => {
     const formData = new FormData();
     formData.append("title", title);
     formData.append("content", content);
-    formData.append("tags", tags ? tags.split(",").map((t) => t.trim()) : []);
-    if (image) formData.append("image", image);
+    formData.append(
+      "tags",
+      tags ? tags.split(",").map((t) => t.trim()) : []
+    );
+    if (image) formData.append("image", image); // append image
 
     try {
-      await API.post("/blogs", formData, {
+      const res = await API.post("/blogs", formData, {
         headers: {
           Authorization: `Bearer ${getToken()}`,
           "Content-Type": "multipart/form-data",
         },
       });
+
       alert("Blog created successfully!");
       navigate("/"); // redirect to home
     } catch (err) {
-      console.error(err);
+      console.error("Create blog error:", err);
       alert(err.response?.data?.message || "Error creating blog");
     }
   };
@@ -80,9 +84,9 @@ const CreateBlog = () => {
         />
         <input
           type="file"
+          accept="image/*"
           onChange={handleImageChange}
           className="w-full"
-          accept="image/*"
         />
         {preview && (
           <img
