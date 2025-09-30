@@ -6,7 +6,8 @@ const blogSchema = new mongoose.Schema(
     content: { type: String, required: true },
     author: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     tags: [String],
-    image: { type: String },
+    // Store the uploaded image path
+    image: { type: String }, 
     likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   },
   { timestamps: true }
