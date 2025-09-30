@@ -1,12 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 
 const Chatbot = () => {
   const [messages, setMessages] = useState([
     { from: "bot", text: "Hello! I am your assistant 🤖. How can I help you?" },
   ]);
   const [input, setInput] = useState("");
+  const chatEndRef = useRef(null);
 
-  // Simple rule-based responses
   const getResponse = (msg) => {
     msg = msg.toLowerCase();
     if (msg.includes("login")) return "To login, click on the Login page from the top navbar.";
@@ -22,6 +22,7 @@ const Chatbot = () => {
     if (!input.trim()) return;
     const userMsg = { from: "user", text: input };
     const botMsg = { from: "bot", text: getResponse(input) };
+
     setMessages((prev) => [...prev, userMsg, botMsg]);
     setInput("");
   };
@@ -29,6 +30,11 @@ const Chatbot = () => {
   const handleKeyPress = (e) => {
     if (e.key === "Enter") handleSend();
   };
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   return (
     <div className="fixed bottom-4 right-4 w-80 bg-white shadow-lg rounded-lg border flex flex-col">
@@ -45,6 +51,7 @@ const Chatbot = () => {
             </span>
           </div>
         ))}
+        <div ref={chatEndRef} />
       </div>
       <div className="flex border-t">
         <input
