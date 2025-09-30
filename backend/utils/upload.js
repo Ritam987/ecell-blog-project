@@ -1,35 +1,43 @@
 const multer = require("multer");
+const { GridFsStorage } = require("multer-gridfs-storage");
+const crypto = require("crypto");
 const path = require("path");
-const fs = require("fs");
 
-// Ensure uploads folder exists
-const uploadDir = path.join(__dirname, "..", "uploads");
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
+// MongoDB connection URI (ensure process.env.MONGO_URI is set)
+const mongoURI = process.env.MONGO_URI;
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, file.fieldname + "-" + Date.now() + ext);
+// Create storage engine
+const storage = new GridFsStorage({
+  url: mongoURI,
+  options: { useNewUrlParser: true, useUnifiedTopology: true },
+  file: (req, file) => {
+    return new Promise((resolve, reject) => {
+      // Only allow image files
+      if (!file.mimetype.startsWith("image/")) {
+        return reject(new Error("Only images are allowed"));
+      }
+
+      // Generate random filename
+      crypto.randomBytes(16, (err, buf) => {
+        if (err) return reject(err);
+        const filename = buf.toString("hex") + path.extname(file.originalname);
+        const fileInfo = {
+          filename: filename,
+          bucketName: "uploads", // must match GridFSBucket name used in blogs.js
+        };
+        resolve(fileInfo);
+      });
+    });
   },
 });
 
-const fileFilter = (req, file, cb) => {
-  // Check file type
-  if (file.mimetype.startsWith("image/")) {
-    cb(null, true);
-  } else {
-    cb(new Error("Only images are allowed"), false);
-  }
-};
-
-const upload = multer({ 
-  storage, 
-  fileFilter,
-  limits: { 
-    fileSize: 5 * 1024 * 1024, // 5MB limit
-    files: 1 // Only allow 1 file
-  }
+// Multer upload middleware
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB max
+    files: 1,
+  },
 });
 
 module.exports = upload;
