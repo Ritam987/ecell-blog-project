@@ -1,17 +1,29 @@
 const express = require("express");
 const auth = require("../middleware/auth");
-const admin = require("../middleware/admin");
 const Blog = require("../models/Blog");
 const Comment = require("../models/Comment");
-const upload = require("../utils/upload");
+const multer = require("multer");
 
 const router = express.Router();
+
+// Multer memory storage (store file in buffer)
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith("image/")) cb(null, true);
+    else cb(new Error("Only image files are allowed"));
+  },
+});
 
 // CREATE BLOG with image upload
 router.post("/", auth, upload.single("image"), async (req, res) => {
   try {
     const { title, content, tags } = req.body;
-    const image = req.file ? `/uploads/${req.file.filename}` : null;
+    const image = req.file
+      ? { data: req.file.buffer, contentType: req.file.mimetype }
+      : null;
 
     const blog = new Blog({
       title,
@@ -35,7 +47,19 @@ router.get("/", async (req, res) => {
     const blogs = await Blog.find()
       .populate("author", "name email")
       .sort({ createdAt: -1 });
-    res.status(200).json(blogs);
+
+    // Convert image buffer to base64 for frontend
+    const blogsWithImages = blogs.map((b) => {
+      const blogObj = b.toObject();
+      if (b.image && b.image.data) {
+        blogObj.image = `data:${b.image.contentType};base64,${b.image.data.toString("base64")}`;
+      } else {
+        blogObj.image = null;
+      }
+      return blogObj;
+    });
+
+    res.status(200).json(blogsWithImages);
   } catch (err) {
     console.error("Get blogs error:", err);
     res.status(500).json({ message: "Server error" });
@@ -47,7 +71,15 @@ router.get("/:id", async (req, res) => {
   try {
     const blog = await Blog.findById(req.params.id).populate("author", "name email");
     if (!blog) return res.status(404).json({ message: "Blog not found" });
-    res.status(200).json(blog);
+
+    const blogObj = blog.toObject();
+    if (blog.image && blog.image.data) {
+      blogObj.image = `data:${blog.image.contentType};base64,${blog.image.data.toString("base64")}`;
+    } else {
+      blogObj.image = null;
+    }
+
+    res.status(200).json(blogObj);
   } catch (err) {
     console.error("Get single blog error:", err);
     res.status(500).json({ message: "Server error" });
@@ -63,11 +95,21 @@ router.put("/:id", auth, upload.single("image"), async (req, res) => {
     if (blog.author.toString() !== req.user._id.toString())
       return res.status(403).json({ message: "Unauthorized" });
 
-    if (req.file) blog.image = `/uploads/${req.file.filename}`;
+    if (req.file) {
+      blog.image = { data: req.file.buffer, contentType: req.file.mimetype };
+    }
 
     Object.assign(blog, req.body);
     await blog.save();
-    res.status(200).json(blog);
+
+    const blogObj = blog.toObject();
+    if (blog.image && blog.image.data) {
+      blogObj.image = `data:${blog.image.contentType};base64,${blog.image.data.toString("base64")}`;
+    } else {
+      blogObj.image = null;
+    }
+
+    res.status(200).json(blogObj);
   } catch (err) {
     console.error("Update blog error:", err);
     res.status(500).json({ message: "Server error" });
@@ -84,10 +126,7 @@ router.delete("/:id", auth, async (req, res) => {
       return res.status(403).json({ message: "Unauthorized" });
     }
 
-    // Delete all comments associated with this blog
     await Comment.deleteMany({ blog: blog._id });
-
-    // Delete the blog itself
     await Blog.findByIdAndDelete(req.params.id);
 
     res.status(200).json({ message: "Blog and associated comments deleted successfully" });
@@ -145,4 +184,3 @@ router.get("/:id/comments", async (req, res) => {
 });
 
 module.exports = router;
-
