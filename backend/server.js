@@ -7,6 +7,9 @@ const { GridFSBucket } = require("mongodb");
 
 dotenv.config();
 const app = express();
+const chatbotRoutes = require("./routes/chatbot");
+app.use("/api/chatbot", chatbotRoutes);
+
 
 // Middleware
 app.use(cors());
@@ -46,3 +49,4 @@ app.get("/", (req, res) => res.send("E-Cell Blogging Backend is running!"));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
