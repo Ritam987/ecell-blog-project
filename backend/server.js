@@ -11,8 +11,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Serve uploaded images statically
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+// Note: No need for static /uploads anymore since images will be in GridFS
 
 // Routes
 const authRoutes = require("./routes/auth");
@@ -29,11 +28,20 @@ mongoose
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
-  .then(() => console.log("MongoDB connected"))
+  .then(() => {
+    console.log("MongoDB connected");
+
+    // Initialize GridFS
+    const gfs = new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
+      bucketName: "uploads",
+    });
+    app.locals.gfs = gfs; // make it accessible in routes if needed
+  })
   .catch((err) => console.error("MongoDB connection error:", err));
 
 // Default route
 app.get("/", (req, res) => res.send("E-Cell Blogging Backend is running!"));
 
+// Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
