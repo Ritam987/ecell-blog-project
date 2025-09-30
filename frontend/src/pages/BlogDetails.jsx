@@ -70,7 +70,7 @@ const BlogDetails = () => {
       {/* Display Image if exists */}
       {blog.image && (
         <img
-          src={`${(process.env.REACT_APP_API_URL?.replace("/api", "") || "https://ecell-blog-project.onrender.com")}/blogs/file/${blog.imageId}`}
+          src={`${process.env.REACT_APP_API_URL?.replace('/api', '') || 'https://ecell-blog-project.onrender.com/blogs/file/${blog.imageId}`}
           alt={blog.title}
           className="w-full h-64 object-cover rounded-md mb-4"
         />
