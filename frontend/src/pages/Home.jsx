@@ -43,7 +43,7 @@ const Home = () => {
           {/* Display uploaded image if available */}
           {blog.image && (
             <img
-              src={`${process.env.REACT_APP_API_URL?.replace("/api", "") || "https://ecell-blog-project.onrender.com"}${blog.image}`}
+              src={blog.image}
               alt={blog.title}
               className="w-full h-48 object-cover rounded mb-3"
             />
@@ -58,7 +58,6 @@ const Home = () => {
             >
               Read More
             </Link>
-            {/* Show Edit and Delete buttons if current user is the author */}
             {currentUser && blog.author._id === currentUser._id && (
               <>
                 <button
