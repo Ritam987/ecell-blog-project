@@ -31,21 +31,27 @@ const CreateBlog = () => {
       return;
     }
 
-    const formData = new FormData();
-    formData.append("title", title);
-    formData.append("content", content);
-    formData.append("tags", tags ? tags.split(",").map((t) => t.trim()) : []);
-    if (image) formData.append("image", image);
-
     try {
+      // FormData for multipart/form-data
+      const formData = new FormData();
+      formData.append("title", title);
+      formData.append("content", content);
+      formData.append(
+        "tags",
+        tags ? tags.split(",").map((t) => t.trim()) : []
+      );
+      if (image) formData.append("image", image);
+
+      // Send to backend
       await API.post("/blogs", formData, {
         headers: {
           Authorization: `Bearer ${getToken()}`,
           "Content-Type": "multipart/form-data",
         },
       });
+
       alert("Blog created successfully!");
-      navigate("/"); // redirect to home
+      navigate("/"); // Redirect to home
     } catch (err) {
       console.error(err);
       alert(err.response?.data?.message || "Error creating blog");
