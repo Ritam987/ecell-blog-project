@@ -62,7 +62,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// SERVE IMAGE
+// SERVE BLOG IMAGE (GridFS)
 router.get("/file/:id", async (req, res) => {
   try {
     const fileId = new mongoose.Types.ObjectId(req.params.id);
@@ -75,7 +75,7 @@ router.get("/file/:id", async (req, res) => {
       return res.status(404).json({ message: "File not found" });
     }
 
-    res.set("Content-Type", files[0].contentType);
+    res.set("Content-Type", files[0].contentType || "image/jpeg");
     gfs.openDownloadStream(fileId).pipe(res);
   } catch (err) {
     console.error("Get file error:", err);
@@ -120,17 +120,20 @@ router.delete("/:id", auth, async (req, res) => {
       return res.status(403).json({ message: "Unauthorized" });
     }
 
+    // Delete all comments associated with this blog
     await Comment.deleteMany({ blog: blog._id });
 
+    // Delete blog image from GridFS if exists
     if (blog.imageId) {
       gfs.delete(new mongoose.Types.ObjectId(blog.imageId), (err) => {
         if (err) console.error("Error deleting image:", err);
       });
     }
 
+    // Delete the blog
     await Blog.findByIdAndDelete(req.params.id);
 
-    res.status(200).json({ message: "Blog, image, and comments deleted successfully" });
+    res.status(200).json({ message: "Blog, image, and associated comments deleted successfully" });
   } catch (err) {
     console.error("Delete blog error:", err);
     res.status(500).json({ message: "Server error" });
