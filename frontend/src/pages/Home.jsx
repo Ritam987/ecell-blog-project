@@ -40,10 +40,10 @@ const Home = () => {
       <h1 className="text-3xl font-bold mb-4">All Blogs</h1>
       {blogs.map((blog) => (
         <div key={blog._id} className="border p-4 rounded shadow-md">
-          {/* Display image if available */}
+          {/* Display uploaded image if available */}
           {blog.image && (
             <img
-              src={`${process.env.REACT_APP_API_URL?.replace('/api', '') || 'https://ecell-blog-project.onrender.com'}${blog.image}`}
+              src={`${process.env.REACT_APP_API_URL?.replace("/api", "") || "https://ecell-blog-project.onrender.com"}${blog.image}`}
               alt={blog.title}
               className="w-full h-48 object-cover rounded mb-3"
             />
@@ -58,7 +58,7 @@ const Home = () => {
             >
               Read More
             </Link>
-            {/* Show Edit and Delete if current user is author */}
+            {/* Show Edit and Delete buttons if current user is the author */}
             {currentUser && blog.author._id === currentUser._id && (
               <>
                 <button
