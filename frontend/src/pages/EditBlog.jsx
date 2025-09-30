@@ -11,17 +11,17 @@ const EditBlog = () => {
   const [content, setContent] = useState("");
   const [tags, setTags] = useState("");
   const [image, setImage] = useState(null); // New image file
-  const [preview, setPreview] = useState(null); // Image preview
+  const [preview, setPreview] = useState(null); // Preview of new image
   const [currentImage, setCurrentImage] = useState(null); // Existing image
 
-  // Fetch blog details
+  // Fetch blog details on mount
   const fetchBlog = async () => {
     try {
       const res = await API.get(`/blogs/${id}`);
       setTitle(res.data.title);
       setContent(res.data.content);
       setTags(res.data.tags.join(","));
-      setCurrentImage(res.data.image);
+      setCurrentImage(res.data.image); // existing image path
     } catch (err) {
       alert(err.response?.data?.message || "Error fetching blog");
     }
@@ -31,22 +31,18 @@ const EditBlog = () => {
     fetchBlog();
   }, [id]);
 
-  // Handle image selection and preview
+  // Handle selecting a new image
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     setImage(file);
-    if (file) {
-      setPreview(URL.createObjectURL(file));
-    } else {
-      setPreview(null);
-    }
+    if (file) setPreview(URL.createObjectURL(file));
+    else setPreview(null);
   };
 
   // Submit updated blog
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validation
     if (!title.trim() || !content.trim()) {
       alert("Title and Content cannot be empty");
       return;
@@ -55,8 +51,8 @@ const EditBlog = () => {
     const formData = new FormData();
     formData.append("title", title);
     formData.append("content", content);
-    formData.append("tags", tags.split(","));
-    if (image) formData.append("image", image);
+    formData.append("tags", tags.split(",").map((t) => t.trim()));
+    if (image) formData.append("image", image); // append new image if selected
 
     try {
       await API.put(`/blogs/${id}`, formData, {
@@ -99,16 +95,16 @@ const EditBlog = () => {
           className="w-full border p-2 rounded"
         />
 
-        {/* Existing image */}
+        {/* Show existing image if no new image selected */}
         {currentImage && !preview && (
           <img
-            src={`${process.env.REACT_APP_API_URL?.replace('/api', '') || 'https://ecell-blog-project.onrender.com'}${currentImage}`}
+            src={`${process.env.REACT_APP_API_URL?.replace("/api", "") || "https://ecell-blog-project.onrender.com"}${currentImage}`}
             alt="Current"
             className="w-full h-48 object-cover rounded mb-2"
           />
         )}
 
-        {/* Preview of new image */}
+        {/* Preview new image if selected */}
         {preview && (
           <img
             src={preview}
@@ -121,6 +117,7 @@ const EditBlog = () => {
           type="file"
           onChange={handleImageChange}
           className="w-full"
+          accept="image/*"
         />
 
         <button
