@@ -27,7 +27,7 @@ export default function Navbar() {
             alt="Logo"
             className="w-8 h-8"
           />
-          BlogApp
+          E-CELL
         </Link>
 
         <div className="flex gap-4">
@@ -54,5 +54,6 @@ export default function Navbar() {
     </nav>
   );
 }
+
 
 
