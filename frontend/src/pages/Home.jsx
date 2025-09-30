@@ -43,7 +43,7 @@ const Home = () => {
           {/* Display image if available */}
           {blog.image && (
             <img
-              src={`${process.env.REACT_APP_API_URL?.replace('/api', '') || 'https://ecell-blog-project.onrender.com'}${blog.image}`}
+              src={`https://ecell-blog-project.onrender.com/api/blogs/image/${blog.image}`}
               alt={blog.title}
               className="w-full h-48 object-cover rounded mb-3"
             />
