@@ -17,24 +17,32 @@ const upload = multer({
   },
 });
 
+// HELPER: convert blog image buffer to base64
+const convertBlogImage = (blog) => {
+  const obj = blog.toObject();
+  if (blog.image && blog.image.data) {
+    obj.image = `data:${blog.image.contentType};base64,${blog.image.data.toString("base64")}`;
+  } else {
+    obj.image = null;
+  }
+  return obj;
+};
+
 // CREATE BLOG with image upload
 router.post("/", auth, upload.single("image"), async (req, res) => {
   try {
     const { title, content, tags } = req.body;
-    const image = req.file
-      ? { data: req.file.buffer, contentType: req.file.mimetype }
-      : null;
 
     const blog = new Blog({
       title,
       content,
-      tags: Array.isArray(tags) ? tags : tags?.split(","),
-      image,
+      tags: Array.isArray(tags) ? tags : tags?.split(",").map(t => t.trim()),
+      image: req.file ? { data: req.file.buffer, contentType: req.file.mimetype } : null,
       author: req.user._id,
     });
 
     await blog.save();
-    res.status(201).json(blog);
+    res.status(201).json(convertBlogImage(blog));
   } catch (err) {
     console.error("Create blog error:", err);
     res.status(500).json({ message: "Server error" });
@@ -44,22 +52,8 @@ router.post("/", auth, upload.single("image"), async (req, res) => {
 // GET ALL BLOGS
 router.get("/", async (req, res) => {
   try {
-    const blogs = await Blog.find()
-      .populate("author", "name email")
-      .sort({ createdAt: -1 });
-
-    // Convert image buffer to base64 for frontend
-    const blogsWithImages = blogs.map((b) => {
-      const blogObj = b.toObject();
-      if (b.image && b.image.data) {
-        blogObj.image = `data:${b.image.contentType};base64,${b.image.data.toString("base64")}`;
-      } else {
-        blogObj.image = null;
-      }
-      return blogObj;
-    });
-
-    res.status(200).json(blogsWithImages);
+    const blogs = await Blog.find().populate("author", "name email").sort({ createdAt: -1 });
+    res.status(200).json(blogs.map(convertBlogImage));
   } catch (err) {
     console.error("Get blogs error:", err);
     res.status(500).json({ message: "Server error" });
@@ -72,14 +66,7 @@ router.get("/:id", async (req, res) => {
     const blog = await Blog.findById(req.params.id).populate("author", "name email");
     if (!blog) return res.status(404).json({ message: "Blog not found" });
 
-    const blogObj = blog.toObject();
-    if (blog.image && blog.image.data) {
-      blogObj.image = `data:${blog.image.contentType};base64,${blog.image.data.toString("base64")}`;
-    } else {
-      blogObj.image = null;
-    }
-
-    res.status(200).json(blogObj);
+    res.status(200).json(convertBlogImage(blog));
   } catch (err) {
     console.error("Get single blog error:", err);
     res.status(500).json({ message: "Server error" });
@@ -99,17 +86,14 @@ router.put("/:id", auth, upload.single("image"), async (req, res) => {
       blog.image = { data: req.file.buffer, contentType: req.file.mimetype };
     }
 
-    Object.assign(blog, req.body);
+    // Update only allowed fields
+    const { title, content, tags } = req.body;
+    if (title) blog.title = title;
+    if (content) blog.content = content;
+    if (tags) blog.tags = Array.isArray(tags) ? tags : tags.split(",").map(t => t.trim());
+
     await blog.save();
-
-    const blogObj = blog.toObject();
-    if (blog.image && blog.image.data) {
-      blogObj.image = `data:${blog.image.contentType};base64,${blog.image.data.toString("base64")}`;
-    } else {
-      blogObj.image = null;
-    }
-
-    res.status(200).json(blogObj);
+    res.status(200).json(convertBlogImage(blog));
   } catch (err) {
     console.error("Update blog error:", err);
     res.status(500).json({ message: "Server error" });
