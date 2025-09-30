@@ -53,7 +53,10 @@ router.get("/", async (req, res) => {
 // GET SINGLE BLOG
 router.get("/:id", async (req, res) => {
   try {
-    const blog = await Blog.findById(req.params.id).populate("author", "name email");
+    const blog = await Blog.findById(req.params.id).populate(
+      "author",
+      "name email"
+    );
     if (!blog) return res.status(404).json({ message: "Blog not found" });
     res.status(200).json(blog);
   } catch (err) {
@@ -92,8 +95,8 @@ router.put("/:id", auth, upload.single("image"), async (req, res) => {
     if (blog.author.toString() !== req.user._id.toString())
       return res.status(403).json({ message: "Unauthorized" });
 
+    // If new image uploaded → delete old one
     if (req.file) {
-      // delete old file if exists
       if (blog.imageId) {
         gfs.delete(new mongoose.Types.ObjectId(blog.imageId), (err) => {
           if (err) console.error("Error deleting old image:", err);
@@ -102,7 +105,15 @@ router.put("/:id", auth, upload.single("image"), async (req, res) => {
       blog.imageId = req.file.id;
     }
 
-    Object.assign(blog, req.body);
+    // Update other fields (but keep existing imageId safe)
+    blog.title = req.body.title || blog.title;
+    blog.content = req.body.content || blog.content;
+    blog.tags = req.body.tags
+      ? Array.isArray(req.body.tags)
+        ? req.body.tags
+        : req.body.tags.split(",")
+      : blog.tags;
+
     await blog.save();
     res.status(200).json(blog);
   } catch (err) {
@@ -111,30 +122,35 @@ router.put("/:id", auth, upload.single("image"), async (req, res) => {
   }
 });
 
-// DELETE BLOG
+// DELETE BLOG (and comments, likes, and image)
 router.delete("/:id", auth, async (req, res) => {
   try {
     const blog = await Blog.findById(req.params.id);
     if (!blog) return res.status(404).json({ message: "Blog not found" });
 
-    if (blog.author.toString() !== req.user._id.toString() && req.user.role !== "admin") {
+    if (
+      blog.author.toString() !== req.user._id.toString() &&
+      req.user.role !== "admin"
+    ) {
       return res.status(403).json({ message: "Unauthorized" });
     }
 
-    // Delete all comments associated with this blog
+    // Delete comments
     await Comment.deleteMany({ blog: blog._id });
 
-    // Delete the blog image from GridFS if exists
+    // Delete blog image if exists
     if (blog.imageId) {
       gfs.delete(new mongoose.Types.ObjectId(blog.imageId), (err) => {
         if (err) console.error("Error deleting image:", err);
       });
     }
 
-    // Delete the blog itself
+    // Delete blog itself (likes array goes with it)
     await Blog.findByIdAndDelete(req.params.id);
 
-    res.status(200).json({ message: "Blog, image, and associated comments deleted successfully" });
+    res.status(200).json({
+      message: "Blog, image, likes, and associated comments deleted successfully",
+    });
   } catch (err) {
     console.error("Delete blog error:", err);
     res.status(500).json({ message: "Server error" });
