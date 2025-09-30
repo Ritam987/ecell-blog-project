@@ -23,7 +23,7 @@ export default function Navbar() {
         <Link to="/" className="font-bold text-lg flex items-center gap-2">
           {/* Logo before the text */}
           <img
-            src="/logo.png"        // <-- Replace with your logo path
+            src="/logo.jpg"        // <-- Replace with your logo path
             alt="Logo"
             className="w-8 h-8"
           />
@@ -54,4 +54,5 @@ export default function Navbar() {
     </nav>
   );
 }
+
 
