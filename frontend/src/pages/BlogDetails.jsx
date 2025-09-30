@@ -72,7 +72,7 @@ const BlogDetails = () => {
         <img
           src={`https://ecell-blog-project.onrender.com/api/blogs/image/${blog.image}`}
           alt={blog.title}
-          className="w-full h-64 object-cover rounded-md mb-4"
+          className="w-full object-contain"
         />
       )}
 
