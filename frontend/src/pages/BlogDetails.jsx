@@ -11,6 +11,7 @@ const BlogDetails = () => {
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState("");
 
+  // Fetch blog details
   const fetchBlog = async () => {
     try {
       const res = await API.get(`/blogs/${id}`);
@@ -20,6 +21,7 @@ const BlogDetails = () => {
     }
   };
 
+  // Fetch blog comments
   const fetchComments = async () => {
     try {
       const res = await API.get(`/blogs/${id}/comments`);
@@ -34,6 +36,7 @@ const BlogDetails = () => {
     fetchComments();
   }, [id]);
 
+  // Handle liking a blog
   const handleLike = async () => {
     try {
       const res = await API.post(
@@ -47,8 +50,9 @@ const BlogDetails = () => {
     }
   };
 
+  // Handle adding a comment
   const handleComment = async () => {
-    if (!commentText) return;
+    if (!commentText.trim()) return;
     try {
       await API.post(
         `/blogs/${id}/comment`,
@@ -67,10 +71,10 @@ const BlogDetails = () => {
       <h1 className="text-3xl font-bold">{blog.title}</h1>
       <p className="text-gray-600 mb-4">by {blog.author?.name}</p>
 
-      {/* Display Image if exists */}
+      {/* Display uploaded image if exists */}
       {blog.image && (
         <img
-          src={`${process.env.REACT_APP_API_URL?.replace('/api', '') || 'https://ecell-blog-project.onrender.com'}${blog.image}`}
+          src={`${process.env.REACT_APP_API_URL?.replace("/api", "") || "https://ecell-blog-project.onrender.com"}${blog.image}`}
           alt={blog.title}
           className="w-full h-64 object-cover rounded-md mb-4"
         />
@@ -78,7 +82,7 @@ const BlogDetails = () => {
 
       <p className="mt-2">{blog.content}</p>
 
-      {/* Edit button visible only for author */}
+      {/* Edit button visible only for the author */}
       {currentUser && blog.author?._id === currentUser._id && (
         <div className="mt-4">
           <button
