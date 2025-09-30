@@ -84,8 +84,13 @@ router.delete("/:id", auth, async (req, res) => {
       return res.status(403).json({ message: "Unauthorized" });
     }
 
+    // Delete all comments associated with this blog
+    await Comment.deleteMany({ blog: blog._id });
+
+    // Delete the blog itself
     await Blog.findByIdAndDelete(req.params.id);
-    res.status(200).json({ message: "Blog deleted successfully" });
+
+    res.status(200).json({ message: "Blog and associated comments deleted successfully" });
   } catch (err) {
     console.error("Delete blog error:", err);
     res.status(500).json({ message: "Server error" });
@@ -140,3 +145,4 @@ router.get("/:id/comments", async (req, res) => {
 });
 
 module.exports = router;
+
