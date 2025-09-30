@@ -1,0 +1,6 @@
+# Backend Environment Variables
+# Copy this to .env file in backend folder
+
+MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/ecell-blog?retryWrites=true&w=majority
+JWT_SECRET=your-super-secret-jwt-key-make-it-long-and-random-for-production
+PORT=5000
