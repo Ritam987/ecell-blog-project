@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const path = require("path");
+const { GridFSBucket } = require("mongodb");
 
 dotenv.config();
 const app = express();
@@ -11,7 +12,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Serve uploaded images statically
+// Serve uploaded images statically (legacy, can keep for other uploads)
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Routes
@@ -24,12 +25,20 @@ app.use("/api/blogs", blogRoutes);
 app.use("/api/users", userRoutes);
 
 // MongoDB connection
+const mongoURI = process.env.MONGO_URI;
+
 mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
+  .connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => {
+    console.log("MongoDB connected");
+
+    // GridFS bucket setup
+    const db = mongoose.connection.db;
+    const bucketName = "blogImages"; // you can choose any bucket name
+    app.locals.gfsBucket = new GridFSBucket(db, { bucketName });
+
+    console.log(`GridFS bucket "${bucketName}" initialized`);
   })
-  .then(() => console.log("MongoDB connected"))
   .catch((err) => console.error("MongoDB connection error:", err));
 
 // Default route
