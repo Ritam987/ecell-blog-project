@@ -37,7 +37,7 @@ const BlogList = () => {
         <div key={blog._id} className="bg-white p-6 rounded shadow-md">
           {blog.image && (
             <img
-              src={`${process.env.REACT_APP_API_URL ? process.env.REACT_APP_API_URL.replace('/api', '') : 'https://ecell-blog-project.onrender.com'}/blogs/file/${blog.imageId}`}
+              src={`${process.env.REACT_APP_API_URL?.replace('/api', '') || 'https://ecell-blog-project.onrender.com'}/blogs/file/${blog.imageId}`}
               alt={blog.title}
               className="w-full h-64 object-cover rounded mb-4"
             />
