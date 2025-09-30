@@ -12,16 +12,16 @@ const EditBlog = () => {
   const [tags, setTags] = useState("");
   const [image, setImage] = useState(null); // New image file
   const [preview, setPreview] = useState(null); // Preview of new image
-  const [currentImage, setCurrentImage] = useState(null); // Existing image
+  const [currentImage, setCurrentImage] = useState(null); // Existing image (base64)
 
-  // Fetch blog details on mount
+  // Fetch blog details
   const fetchBlog = async () => {
     try {
       const res = await API.get(`/blogs/${id}`);
       setTitle(res.data.title);
       setContent(res.data.content);
       setTags(res.data.tags.join(","));
-      setCurrentImage(res.data.image); // existing image path
+      setCurrentImage(res.data.image); // base64 image
     } catch (err) {
       alert(err.response?.data?.message || "Error fetching blog");
     }
@@ -98,7 +98,7 @@ const EditBlog = () => {
         {/* Show existing image if no new image selected */}
         {currentImage && !preview && (
           <img
-            src={`${process.env.REACT_APP_API_URL?.replace("/api", "") || "https://ecell-blog-project.onrender.com"}${currentImage}`}
+            src={currentImage}
             alt="Current"
             className="w-full h-48 object-cover rounded mb-2"
           />
