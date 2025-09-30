@@ -11,12 +11,11 @@ const CreateBlog = () => {
   const [preview, setPreview] = useState(null);
   const navigate = useNavigate();
 
-  // Handle image selection and preview
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       setImage(file);
-      setPreview(URL.createObjectURL(file)); // show preview
+      setPreview(URL.createObjectURL(file));
     } else {
       setImage(null);
       setPreview(null);
@@ -25,7 +24,6 @@ const CreateBlog = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!title || !content) {
       alert("Title and Content are required!");
       return;
@@ -34,14 +32,11 @@ const CreateBlog = () => {
     const formData = new FormData();
     formData.append("title", title);
     formData.append("content", content);
-    formData.append(
-      "tags",
-      tags ? tags.split(",").map((t) => t.trim()) : []
-    );
-    if (image) formData.append("image", image); // append image
+    formData.append("tags", tags ? tags.split(",").map((t) => t.trim()) : []);
+    if (image) formData.append("image", image);
 
     try {
-      const res = await API.post("/blogs", formData, {
+      await API.post("/blogs", formData, {
         headers: {
           Authorization: `Bearer ${getToken()}`,
           "Content-Type": "multipart/form-data",
@@ -49,7 +44,7 @@ const CreateBlog = () => {
       });
 
       alert("Blog created successfully!");
-      navigate("/"); // redirect to home
+      navigate("/");
     } catch (err) {
       console.error("Create blog error:", err);
       alert(err.response?.data?.message || "Error creating blog");
