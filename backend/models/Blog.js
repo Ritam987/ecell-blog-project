@@ -6,7 +6,8 @@ const blogSchema = new mongoose.Schema(
     content: { type: String, required: true },
     author: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     tags: [String],
-    image: { type: String },
+    // Only store the GridFS file ID, not a URL
+    imageId: { type: mongoose.Schema.Types.ObjectId, ref: "uploads.files" },
     likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   },
   { timestamps: true }
