@@ -7,9 +7,6 @@ const { GridFSBucket } = require("mongodb");
 
 dotenv.config();
 const app = express();
-const chatbotRoutes = require("./routes/chatbot");
-app.use("/api/chatbot", chatbotRoutes);
-
 
 // Middleware
 app.use(cors());
@@ -18,14 +15,17 @@ app.use(express.json());
 // Serve uploaded images statically (legacy, can keep for other uploads)
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// Routes
+// Import routes
 const authRoutes = require("./routes/auth");
 const blogRoutes = require("./routes/blogs");
 const userRoutes = require("./routes/users");
+const chatbotRoutes = require("./routes/chatbot"); // Chatbot route
 
+// Mount routes
 app.use("/api/auth", authRoutes);
 app.use("/api/blogs", blogRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/chatbot", chatbotRoutes); // public chatbot endpoint
 
 // MongoDB connection
 const mongoURI = process.env.MONGO_URI;
@@ -37,7 +37,7 @@ mongoose
 
     // GridFS bucket setup
     const db = mongoose.connection.db;
-    const bucketName = "blogImages"; // you can choose any bucket name
+    const bucketName = "blogImages"; // bucket for storing blog images
     app.locals.gfsBucket = new GridFSBucket(db, { bucketName });
 
     console.log(`GridFS bucket "${bucketName}" initialized`);
@@ -47,6 +47,6 @@ mongoose
 // Default route
 app.get("/", (req, res) => res.send("E-Cell Blogging Backend is running!"));
 
+// Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
