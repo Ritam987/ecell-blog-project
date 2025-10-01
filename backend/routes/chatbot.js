@@ -1,19 +1,21 @@
-const express = require("express");
-const router = express.Router();
-const { getAnswer } = require("../utils/chatbotLogic");
+// chatbot.js
+import express from "express";
+import { generateAnswer } from "../utils/chatbotLogic.js";
 
-// Public endpoint: /api/chatbot/public?query=...
+const router = express.Router();
+
+// Public endpoint, no authentication required
 router.get("/public", async (req, res) => {
   try {
     const query = req.query.query;
-    if (!query) return res.status(400).json({ error: "Query is required" });
+    if (!query) return res.json({ answer: "Please enter a query." });
 
-    const answer = await getAnswer(query);
+    const answer = await generateAnswer(query);
     res.json({ answer });
   } catch (err) {
     console.error("Chatbot error:", err);
-    res.status(500).json({ error: `Server error: ${err.message}` });
+    res.status(500).json({ answer: `⚠️ Server error: ${err.message}` });
   }
 });
 
-module.exports = router;
+export default router;
