@@ -1,68 +1,60 @@
-const express = require("express");
+import express from "express";
+import fetch from "node-fetch";
+
 const router = express.Router();
-const fetch = require("node-fetch"); // make sure node-fetch is installed
 
-// Rule-based answers (fast, no OpenAI call needed)
-const RULES = {
-  "how to login": "To login, go to the Login page from the navbar and enter your email and password.",
-  "how to register": "To register, click on Register in the navbar, fill the form, and submit.",
-  "how to logout": "To logout, click on your profile menu and select Logout.",
-  "how to post": "If you’re logged in, click 'Create Blog' in the navbar to write and publish.",
-  "how to edit blog": "If you're the author, open your blog and click the Edit button to update it.",
-  "how to delete blog": "If you're the author, open your blog and click Delete to remove it.",
-  "how to read full blog": "Click 'Read More' on any blog card to open and read the full blog.",
-};
-
-// Public chatbot endpoint (no auth required)
+// Public endpoint (no authentication)
 router.post("/public", async (req, res) => {
   try {
     const { message } = req.body;
-    console.log("📩 Incoming chatbot message:", message);
 
-    if (!message) {
+    if (!message || message.trim() === "") {
       return res.status(400).json({ error: "Message is required" });
     }
 
-    const lowerMsg = message.toLowerCase();
+    // Check if query is "write a blog"
+    const isBlogRequest = message.toLowerCase().includes("write a blog");
 
-    // Check rules first
-    for (const key of Object.keys(RULES)) {
-      if (lowerMsg.includes(key)) {
-        console.log("✅ Rule matched:", key);
-        return res.json({ reply: RULES[key] });
-      }
-    }
-
-    // Otherwise use OpenAI
+    // Call OpenAI API
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
         "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini", // lightweight model for cost efficiency
+        model: "gpt-4o-mini",
         messages: [
-          { role: "system", content: "You are a helpful blogging assistant chatbot." },
-          { role: "user", content: message },
+          {
+            role: "system",
+            content: "You are a helpful hybrid chatbot. You can answer rules-based questions and generate blogs if asked.",
+          },
+          {
+            role: "user",
+            content: message,
+          },
         ],
-        max_tokens: 300,
+        max_tokens: 500,
       }),
     });
 
-    const data = await response.json();
-    console.log("🔍 OpenAI raw response:", data);
-
-    if (data.error) {
-      return res.status(500).json({ error: data.error.message });
+    if (!response.ok) {
+      const error = await response.text();
+      console.error("OpenAI API Error:", error);
+      return res.status(500).json({ error: "Failed to fetch from OpenAI API" });
     }
 
-    const reply = data.choices?.[0]?.message?.content || "⚠️ No response generated.";
-    res.json({ reply });
-  } catch (error) {
-    console.error("🔥 Chatbot server error:", error);
-    res.status(500).json({ error: "Something went wrong." });
+    const data = await response.json();
+    const reply = data.choices[0].message.content;
+
+    res.json({
+      reply,
+      isBlog: isBlogRequest, // frontend can use this to show "Save Blog" later if needed
+    });
+  } catch (err) {
+    console.error("Chatbot error:", err);
+    res.status(500).json({ error: "Server error. Please try again later." });
   }
 });
 
-module.exports = router;
+export default router;
