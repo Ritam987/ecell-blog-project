@@ -2,7 +2,7 @@
 const { OpenAI } = require("openai");
 
 const client = new OpenAI({
-  apiKey:"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", // replace with env or hardcode temporarily
+  apiKey: process.env.OPENAI_API_KEY, // replace with env or hardcode temporarily
 });
 
 // Rule-based responses
