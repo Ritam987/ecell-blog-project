@@ -1,112 +1,98 @@
 // src/components/Chatbot.jsx
 import React, { useState, useRef, useEffect } from "react";
 
+const ruleBasedQA = [
+  { question: "How to login?", answer: "Click on the Login button in the navbar and enter your credentials." },
+  { question: "How to register?", answer: "Click on Register, fill in the details, and submit." },
+  { question: "How to logout?", answer: "Click on your profile and select Logout." },
+  { question: "How to create a blog?", answer: "Click on 'Create Blog' in the navbar and fill out the form." },
+  { question: "How to edit my blog?", answer: "Go to your blog details page and click 'Edit' if you are the author." },
+  { question: "How to delete my blog?", answer: "Go to your blog details page and click 'Delete' if you are the author." },
+  { question: "How can I read the full blog?", answer: "Click on 'More' on the blog card to view the full content." },
+];
+
 const Chatbot = () => {
   const [messages, setMessages] = useState([
-    { type: "bot", text: "Hello! I am your assistant. Ask me anything about the site." },
+    { type: "bot", text: "Hello! I am your assistant. Click a question below to get guidance." },
   ]);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [visible, setVisible] = useState(false);
   const chatEndRef = useRef(null);
 
-  // Auto scroll to latest message
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSend = async () => {
-    if (!input.trim()) return;
-
-    const userMessage = { type: "user", text: input };
-    setMessages(prev => [...prev, userMessage]);
-    setInput("");
-    setLoading(true);
-
-    try {
-      const res = await fetch(
-        `https://ecell-blog-project.onrender.com/api/chatbot/public?query=${encodeURIComponent(input)}`,
-        { method: "GET" }
-      );
-
-      if (!res.ok) {
-        throw new Error(`Server error: ${res.status} ${res.statusText}`);
-      }
-
-      const data = await res.json();
-      const botMessage = {
-        type: "bot",
-        text: data.answer || "Sorry, I could not generate a response.",
-      };
-      setMessages(prev => [...prev, botMessage]);
-    } catch (err) {
-      const errorMsg = {
-        type: "bot",
-        text: `⚠️ Server/network error: ${err.message}`,
-      };
-      setMessages(prev => [...prev, errorMsg]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleKeyPress = (e) => {
-    if (e.key === "Enter") handleSend();
+  const handleQuestionClick = (qa) => {
+    setMessages((prev) => [
+      ...prev,
+      { type: "user", text: qa.question },
+      { type: "bot", text: qa.answer },
+    ]);
   };
 
   return (
-    <div className="fixed bottom-4 right-4 w-80 max-w-full bg-white border shadow-lg rounded-lg flex flex-col">
-      <div className="bg-blue-500 text-white px-4 py-2 rounded-t-lg font-bold">Chatbot</div>
-      <div
-        className="flex-1 p-4 overflow-y-auto custom-scrollbar"
-        style={{ maxHeight: "300px" }}
+    <div className="fixed bottom-4 right-4 flex flex-col items-end">
+      {/* Toggle Button */}
+      <button
+        className="mb-2 bg-blue-500 text-white px-4 py-2 rounded shadow hover:bg-blue-600"
+        onClick={() => setVisible(!visible)}
       >
-        {messages.map((msg, idx) => (
-          <div
-            key={idx}
-            className={`mb-2 p-2 rounded ${
-              msg.type === "user" ? "bg-gray-200 text-right" : "bg-gray-100 text-left"
-            }`}
-          >
-            {msg.text}
-          </div>
-        ))}
-        <div ref={chatEndRef} />
-      </div>
-      <div className="flex border-t p-2">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyPress}
-          placeholder="Type your message..."
-          className="flex-1 border rounded px-2 py-1"
-        />
-        <button
-          onClick={handleSend}
-          className="ml-2 bg-blue-500 text-white px-4 py-1 rounded hover:bg-blue-600"
-          disabled={loading}
-        >
-          {loading ? "..." : "Send"}
-        </button>
-      </div>
+        {visible ? "Hide Chatbot" : "Show Chatbot"}
+      </button>
 
-      {/* Custom scrollbar styling */}
-      <style jsx>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 8px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: #f1f1f1;
-          border-radius: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #888;
-          border-radius: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #555;
-        }
-      `}</style>
+      {/* Chatbox */}
+      {visible && (
+        <div className="w-80 max-w-full bg-white border shadow-lg rounded-lg flex flex-col">
+          <div className="bg-blue-500 text-white px-4 py-2 rounded-t-lg font-bold">
+            Chatbot
+          </div>
+          <div
+            className="flex-1 p-4 overflow-y-auto custom-scrollbar"
+            style={{ maxHeight: "300px" }}
+          >
+            {messages.map((msg, idx) => (
+              <div
+                key={idx}
+                className={`mb-2 p-2 rounded ${
+                  msg.type === "user" ? "bg-gray-200 text-right" : "bg-gray-100 text-left"
+                }`}
+              >
+                {msg.text}
+              </div>
+            ))}
+            <div ref={chatEndRef} />
+          </div>
+          <div className="p-2 border-t flex flex-wrap gap-2">
+            {ruleBasedQA.map((qa, idx) => (
+              <button
+                key={idx}
+                onClick={() => handleQuestionClick(qa)}
+                className="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300"
+              >
+                {qa.question}
+              </button>
+            ))}
+          </div>
+
+          {/* Custom scrollbar */}
+          <style jsx>{`
+            .custom-scrollbar::-webkit-scrollbar {
+              width: 8px;
+            }
+            .custom-scrollbar::-webkit-scrollbar-track {
+              background: #f1f1f1;
+              border-radius: 4px;
+            }
+            .custom-scrollbar::-webkit-scrollbar-thumb {
+              background: #888;
+              border-radius: 4px;
+            }
+            .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+              background: #555;
+            }
+          `}</style>
+        </div>
+      )}
     </div>
   );
 };
