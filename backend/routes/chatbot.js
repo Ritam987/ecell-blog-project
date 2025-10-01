@@ -1,21 +1,19 @@
-// chatbot.js
-import express from "express";
-import { generateAnswer } from "../utils/chatbotLogic.js";
-
+const express = require("express");
 const router = express.Router();
+const { generateAnswer } = require("../utils/chatbotLogic");
 
-// Public endpoint, no authentication required
+// PUBLIC endpoint
 router.get("/public", async (req, res) => {
-  try {
-    const query = req.query.query;
-    if (!query) return res.json({ answer: "Please enter a query." });
+  const query = req.query.query;
+  if (!query) return res.status(400).json({ error: "Query parameter missing" });
 
+  try {
     const answer = await generateAnswer(query);
     res.json({ answer });
   } catch (err) {
     console.error("Chatbot error:", err);
-    res.status(500).json({ answer: `⚠️ Server error: ${err.message}` });
+    res.status(500).json({ error: `Server error: ${err.message}` });
   }
 });
 
-export default router;
+module.exports = router; // ✅ Must export the router, not an object
