@@ -3,7 +3,7 @@ const OpenAI = require("openai");
 
 // Initialize OpenAI client (v4+)
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: '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',
 });
 
 // Define simple rule-based responses
