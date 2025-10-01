@@ -9,10 +9,10 @@ dotenv.config();
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({ origin: "*" })); // allow public access
 app.use(express.json());
 
-// Serve uploaded images statically (legacy)
+// Serve uploads statically (legacy)
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Routes
@@ -24,17 +24,16 @@ const chatbotRoutes = require("./routes/chatbot");
 app.use("/api/auth", authRoutes);
 app.use("/api/blogs", blogRoutes);
 app.use("/api/users", userRoutes);
-app.use("/api/chatbot", chatbotRoutes); // Chatbot route
+app.use("/api/chatbot", chatbotRoutes); // chatbot route
 
 // MongoDB connection
 const mongoURI = process.env.MONGO_URI;
-
 mongoose
   .connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {
     console.log("MongoDB connected");
 
-    // GridFS bucket setup
+    // GridFS bucket setup for blog images
     const db = mongoose.connection.db;
     const bucketName = "blogImages";
     app.locals.gfsBucket = new GridFSBucket(db, { bucketName });
@@ -45,5 +44,6 @@ mongoose
 // Default route
 app.get("/", (req, res) => res.send("E-Cell Blogging Backend is running!"));
 
+// Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
