@@ -27,7 +27,7 @@ async function generateAnswer(message) {
 
     // AI response via OpenAI
     const response = await client.chat.completions.create({
-      model: "gpt-3.5",
+      model: "gpt-3.5-turbo",
       messages: [
         {
           role: "system",
