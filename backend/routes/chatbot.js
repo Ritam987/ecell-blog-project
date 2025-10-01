@@ -1,33 +1,34 @@
-// routes/chatbot.js
 const express = require("express");
 const router = express.Router();
 const axios = require("axios");
 
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+
+// Public AI Chatbot endpoint (no auth)
 router.post("/public", async (req, res) => {
   try {
-    const prompt = req.body.prompt;
-    if (!prompt) return res.status(400).json({ message: "Prompt required" });
+    const { message } = req.body;
+    if (!message) return res.status(400).json({ message: "Message is required" });
 
-    const openaiRes = await axios.post(
-      "https://api.openai.com/v1/completions",
+    const response = await axios.post(
+      "https://api.openai.com/v1/chat/completions",
       {
-        model: "text-davinci-003",
-        prompt,
-        max_tokens: 500,
+        model: "gpt-3.5-turbo",
+        messages: [{ role: "user", content: message }],
       },
       {
         headers: {
+          Authorization: `Bearer ${OPENAI_API_KEY}`,
           "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
         },
       }
     );
 
-    const botResponse = openaiRes.data.choices[0].text.trim();
-    res.json({ response: botResponse });
+    const answer = response.data.choices[0].message.content;
+    res.status(200).json({ answer });
   } catch (err) {
-    console.error("Chatbot error:", err.message);
-    res.status(500).json({ response: "⚠️ Server error. Try again." });
+    console.error("Chatbot error:", err.message || err);
+    res.status(500).json({ message: "Server error" });
   }
 });
 
