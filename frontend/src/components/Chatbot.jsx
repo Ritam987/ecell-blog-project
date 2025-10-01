@@ -1,89 +1,75 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState } from "react";
 
-function Chatbot() {
-  const [messages, setMessages] = useState([
-    { sender: "bot", text: "Hi 👋 I’m your assistant. Ask me about login, register, posting blogs, or even request me to write a blog for you!" },
-  ]);
+export default function Chatbot() {
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
-  const messagesEndRef = useRef(null);
-
-  // Auto-scroll to bottom
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  const [loading, setLoading] = useState(false);
 
   const sendMessage = async () => {
     if (!input.trim()) return;
 
-    const userMsg = { sender: "user", text: input };
-    setMessages((prev) => [...prev, userMsg, { sender: "bot", text: "🤔 Thinking..." }]);
+    const userMessage = { sender: "user", text: input };
+    setMessages((prev) => [...prev, userMessage]);
     setInput("");
+    setLoading(true);
 
     try {
-      const res = await fetch("https://ecell-blog-project.onrender.com/chatbot/public", {
+      const res = await fetch("https://your-backend-url.onrender.com/chatbot/public", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: input }),
       });
 
-      const data = await res.json();
-      console.log("Chatbot response:", data);
+      if (!res.ok) {
+        throw new Error("Server error");
+      }
 
-      setMessages((prev) => {
-        const updated = [...prev];
-        updated[updated.length - 1] = {
-          sender: "bot",
-          text: data.reply || "⚠️ No reply received",
-        };
-        return updated;
-      });
-    } catch (error) {
-      console.error("Chatbot error:", error);
-      setMessages((prev) => {
-        const updated = [...prev];
-        updated[updated.length - 1] = { sender: "bot", text: "⚠️ Server error." };
-        return updated;
-      });
+      const data = await res.json();
+      const botMessage = { sender: "bot", text: data.reply };
+
+      setMessages((prev) => [...prev, botMessage]);
+    } catch (err) {
+      console.error(err);
+      setMessages((prev) => [
+        ...prev,
+        { sender: "bot", text: "⚠️ Server error. Please try again." },
+      ]);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="fixed bottom-4 right-4 w-80 h-96 bg-white border border-gray-300 rounded-lg shadow-lg flex flex-col">
-      {/* Header */}
-      <div className="bg-blue-600 text-white p-3 rounded-t-lg font-bold">
-        💬 Blogging Assistant
+    <div className="fixed bottom-5 right-5 w-96 bg-white shadow-lg rounded-lg border">
+      <div className="p-3 bg-blue-600 text-white font-bold rounded-t-lg">
+        AI Chatbot
       </div>
-
-      {/* Messages */}
-      <div className="flex-1 p-3 overflow-y-auto space-y-2 scrollbar-thin scrollbar-thumb-blue-500 scrollbar-track-gray-200">
+      <div className="p-3 h-80 overflow-y-auto">
         {messages.map((msg, i) => (
           <div
             key={i}
-            className={`p-2 rounded-lg max-w-[75%] ${
+            className={`my-2 p-2 rounded-lg ${
               msg.sender === "user"
-                ? "bg-blue-100 text-right ml-auto"
+                ? "bg-blue-100 text-right"
                 : "bg-gray-100 text-left"
             }`}
           >
             {msg.text}
           </div>
         ))}
-        <div ref={messagesEndRef} />
+        {loading && <div className="text-gray-500">Thinking...</div>}
       </div>
-
-      {/* Input */}
-      <div className="p-2 border-t flex">
+      <div className="flex p-3 border-t">
         <input
           type="text"
+          className="flex-1 border rounded-l-lg px-2 py-1"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Type your message..."
-          className="flex-1 border rounded px-2 py-1 text-sm focus:outline-none"
-          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+          placeholder="Ask me anything..."
         />
         <button
           onClick={sendMessage}
-          className="ml-2 bg-blue-600 text-white px-3 py-1 rounded text-sm"
+          className="bg-blue-600 text-white px-3 py-1 rounded-r-lg"
         >
           Send
         </button>
@@ -91,5 +77,3 @@ function Chatbot() {
     </div>
   );
 }
-
-export default Chatbot;
