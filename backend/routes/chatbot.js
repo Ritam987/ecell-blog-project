@@ -1,58 +1,43 @@
 const express = require("express");
+const router = express.Router();
 const fetch = require("node-fetch");
 
-const router = express.Router();
+// Define your rule-based responses
+const rules = [
+  { question: "how to login", answer: "To login, go to the Login page and enter your credentials." },
+  { question: "how to register", answer: "To register, click on Register and fill the form." },
+  { question: "how to logout", answer: "Click the Logout button in the Navbar to logout." },
+  { question: "how to edit blog", answer: "If you are the author, open your blog and click 'Edit'." },
+  { question: "how to delete blog", answer: "If you are the author, open your blog and click 'Delete'." },
+  { question: "how to read full blog", answer: "Click on 'Read More' to view the full blog post." },
+];
 
-// Public hybrid chatbot endpoint
+// Public endpoint for chat
 router.get("/public", async (req, res) => {
-  const userQuery = req.query.query;
-  if (!userQuery) return res.status(400).json({ answer: "Query is required" });
-
   try {
-    // Rule-based responses
-    const rules = {
-      "how to login": "You can login by clicking the login button and entering your credentials.",
-      "how to register": "Click on the register button and fill in the required details.",
-      "how to logout": "Click on your profile and select logout.",
-      "how to edit blog": "Only the author can edit a blog. Go to the blog details page and click 'Edit'.",
-      "how to delete blog": "Only the author or admin can delete a blog. Click 'Delete' on your blog details page.",
-      "how to read full blog": "Click 'More' on the blog snippet in the home page to read the full content.",
-    };
+    const userQuery = req.query.query;
+    if (!userQuery) return res.status(400).json({ answer: "Query is required" });
 
-    const lowerQuery = userQuery.toLowerCase();
-    const ruleKeys = Object.keys(rules);
-    let ruleAnswer = null;
-    for (let key of ruleKeys) {
-      if (lowerQuery.includes(key)) {
-        ruleAnswer = rules[key];
-        break;
-      }
-    }
+    // Check rule-based first (case-insensitive)
+    const rule = rules.find(r => userQuery.toLowerCase().includes(r.question.toLowerCase()));
+    if (rule) return res.json({ answer: rule.answer });
 
-    if (ruleAnswer) return res.status(200).json({ answer: ruleAnswer });
+    // Else call Free GPT API
+    const response = await fetch(
+      `https://free-unoficial-gpt4o-mini-api-g70n.onrender.com/chat/?query=${encodeURIComponent(userQuery)}`,
+      { method: "GET", headers: { Accept: "application/json" } }
+    );
 
-    // AI response via free GPT API
-    const response = await fetch(`https://free-unoficial-gpt4o-mini-api-g70n.onrender.com/chat/?query=${encodeURIComponent(
-      userQuery
-    )}`,
-    {
-        method: "GET",
-        headers: { Accept: "application/json" },
-    }
-  );
+    const data = await response.json();
 
-   const data = await response.json();
+    // Free API might return different field names
+    const aiAnswer = data.response || data.answer || data.text || "Sorry, I could not generate an answer.";
 
-// Free GPT API might return: data.response OR data.answer OR data.text
-   aiAnswer = data.response || data.answer || data.text || "Sorry, I could not generate an answer.";
+    res.json({ answer: aiAnswer });
 
-res.status(200).json({ answer: aiAnswer });
-    aiAnswer = data.response || "Sorry, I could not generate an answer.";
-
-    res.status(200).json({ answer: aiAnswer });
-  } catch (err) {
-    console.error("Chatbot error:", err);
-    res.status(500).json({ answer: "⚠️ Server error: " + err.message });
+  } catch (error) {
+    console.error("Chatbot error:", error);
+    res.status(500).json({ answer: `⚠️ Server error: ${error.message}` });
   }
 });
 
