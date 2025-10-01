@@ -1,47 +1,56 @@
-// backend/utils/chatbotLogic.js
-const { OpenAI } = require("openai");
-
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY, // replace with env or hardcode temporarily
-});
+const fetch = require("node-fetch");
 
 // Rule-based responses
-const ruleBasedResponses = {
-  "how to login": "To login, click on the Login button and enter your credentials.",
-  "how to register": "To register, click on the Register button and fill the form.",
-  "how to logout": "Click on your profile and then click Logout.",
-  "how to edit blog": "Go to your blog, click 'Edit', make changes, and save.",
-  "how to delete blog": "Go to your blog, click 'Delete', and confirm.",
-  "how to read full blog": "Click on 'Read More' of any blog to read the full content.",
-};
+const rules = [
+  { question: /login/i, answer: "To login, click on the Login button and enter your credentials." },
+  { question: /register/i, answer: "To register, click on Register and fill out the form." },
+  { question: /logout/i, answer: "To logout, click on your profile and select Logout." },
+  { question: /edit blog/i, answer: "If you are the author, click 'Edit' on your blog to make changes." },
+  { question: /delete blog/i, answer: "If you are the author, click 'Delete' on your blog to remove it." },
+  { question: /read full blog/i, answer: "Click 'More' on the blog preview to read the full post." }
+];
 
-async function generateAnswer(message) {
+// Check rule-based answers first
+function getRuleBasedAnswer(query) {
+  const rule = rules.find(r => r.question.test(query));
+  return rule ? rule.answer : null;
+}
+
+// Hugging Face AI Answer
+async function generateAIAnswer(query) {
   try {
-    // Check rule-based first
-    const lowerMsg = message.toLowerCase();
-    for (const key in ruleBasedResponses) {
-      if (lowerMsg.includes(key)) {
-        return ruleBasedResponses[key];
-      }
-    }
+    const apiKey = process.env.HUGGING_FACE_API_KEY;
+    if (!apiKey) throw new Error("Hugging Face API key is missing");
 
-    // AI response via OpenAI
-    const response = await client.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [
-        {
-          role: "system",
-          content: "You are a helpful assistant for the E-Cell blogging website.",
-        },
-        { role: "user", content: message },
-      ],
+    const response = await fetch("https://api-inference.huggingface.co/models/gpt2", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ inputs: query })
     });
 
-    return response.choices[0].message.content;
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`Hugging Face API error: ${response.status} ${errText}`);
+    }
+
+    const data = await response.json();
+    // GPT2 returns generated text in data[0].generated_text
+    return data[0]?.generated_text || "Sorry, I could not generate a response.";
   } catch (err) {
     console.error("Chatbot error:", err);
-    return "⚠️ Server error: " + err.message;
+    return `⚠️ Server error: ${err.message}`;
   }
 }
 
-module.exports = { generateAnswer };
+async function getAnswer(query) {
+  const ruleAnswer = getRuleBasedAnswer(query);
+  if (ruleAnswer) return ruleAnswer;
+
+  // Otherwise fallback to AI
+  return await generateAIAnswer(query);
+}
+
+module.exports = { getAnswer };
