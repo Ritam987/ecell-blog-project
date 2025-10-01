@@ -1,111 +1,107 @@
-import React, { useState, useEffect, useRef } from "react";
-import API from "../utils/api";
-import { getToken, getUser } from "../utils/auth";
+// frontend/src/components/Chatbot.jsx
+import React, { useState, useRef, useEffect } from "react";
 
 const Chatbot = () => {
-  const [open, setOpen] = useState(false);
+  const [messages, setMessages] = useState([
+    { sender: "bot", text: "Hi! 👋 I’m your assistant. Ask me about login, register, blogs, or even general questions!" },
+  ]);
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState([]);
-  const [typing, setTyping] = useState(false);
+  const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
-  const currentUser = getUser();
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
+  // Auto-scroll to bottom
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, typing]);
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
-  // Send message handler
-  const sendMessage = async () => {
+  const handleSend = async () => {
     if (!input.trim()) return;
 
-    const userMessage = { sender: "user", text: input };
-    setMessages((prev) => [...prev, userMessage]);
+    const newMessage = { sender: "user", text: input };
+    setMessages((prev) => [...prev, newMessage]);
     setInput("");
-    setTyping(true);
+    setLoading(true);
 
     try {
-      const res = await API.post(
-        "/chatbot",
-        { prompt: input },
-        { headers: { Authorization: `Bearer ${getToken()}` } }
-      );
+      // Check if user is logged in
+      const token = localStorage.getItem("token");
+      const endpoint = token
+        ? "https://ecell-blog-project.onrender.com/api/chatbot"
+        : "https://ecell-blog-project.onrender.com/api/chatbot/public";
 
-      const botMessage = { sender: "bot", text: res.data.reply };
-      setMessages((prev) => [...prev, botMessage]);
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ prompt: input }),
+      });
+
+      const data = await res.json();
+      const reply = data.reply || "⚠️ No response from chatbot.";
+
+      setMessages((prev) => [...prev, { sender: "bot", text: reply }]);
     } catch (err) {
+      console.error("Chatbot error:", err);
       setMessages((prev) => [
         ...prev,
-        { sender: "bot", text: "Error generating response. Try again." },
+        { sender: "bot", text: "⚠️ Error connecting to chatbot. Try again later." },
       ]);
-      console.error(err);
     } finally {
-      setTyping(false);
+      setLoading(false);
     }
   };
 
   const handleKeyPress = (e) => {
-    if (e.key === "Enter") sendMessage();
+    if (e.key === "Enter") handleSend();
   };
 
   return (
-    <div className="fixed bottom-4 right-4 z-50">
-      <button
-        className="bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg hover:bg-blue-700"
-        onClick={() => setOpen((prev) => !prev)}
+    <div className="fixed bottom-4 right-4 w-80 bg-white shadow-2xl rounded-lg border border-gray-200 flex flex-col overflow-hidden">
+      {/* Header */}
+      <div className="bg-blue-600 text-white px-4 py-2 font-semibold">
+        Assistant Chatbot 🤖
+      </div>
+
+      {/* Chat area */}
+      <div
+        className="flex-1 overflow-y-auto p-3 space-y-2"
+        style={{ maxHeight: "300px" }}
       >
-        Chat
-      </button>
-
-      {open && (
-        <div className="w-80 h-96 bg-white shadow-xl rounded-lg flex flex-col mt-2">
-          <div className="bg-blue-600 text-white px-4 py-2 rounded-t-lg font-semibold">
-            Chatbot Assistant
+        {messages.map((msg, i) => (
+          <div
+            key={i}
+            className={`p-2 rounded-lg text-sm ${
+              msg.sender === "user"
+                ? "bg-blue-100 self-end text-right"
+                : "bg-gray-100 text-left"
+            }`}
+          >
+            {msg.text}
           </div>
+        ))}
+        <div ref={messagesEndRef} />
+      </div>
 
-          <div className="flex-1 overflow-y-auto p-2 space-y-2 scrollbar-thin scrollbar-thumb-blue-500 scrollbar-track-gray-200">
-            {messages.map((m, idx) => (
-              <div
-                key={idx}
-                className={`px-2 py-1 rounded ${
-                  m.sender === "user"
-                    ? "bg-blue-100 self-end"
-                    : "bg-gray-200 self-start"
-                }`}
-              >
-                {m.text}
-              </div>
-            ))}
-            {typing && (
-              <div className="px-2 py-1 rounded bg-gray-200 self-start italic text-gray-600">
-                Typing...
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-
-          <div className="p-2 border-t flex">
-            <input
-              type="text"
-              className="flex-1 border rounded px-2 py-1"
-              placeholder="Type a message..."
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={handleKeyPress}
-            />
-            <button
-              onClick={sendMessage}
-              className="bg-blue-600 text-white px-3 py-1 ml-2 rounded hover:bg-blue-700"
-            >
-              Send
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Input area */}
+      <div className="flex border-t">
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyPress={handleKeyPress}
+          placeholder="Type your message..."
+          className="flex-1 p-2 text-sm outline-none"
+        />
+        <button
+          onClick={handleSend}
+          disabled={loading}
+          className="bg-blue-600 text-white px-3 text-sm hover:bg-blue-700 disabled:opacity-50"
+        >
+          {loading ? "..." : "Send"}
+        </button>
+      </div>
     </div>
   );
 };
