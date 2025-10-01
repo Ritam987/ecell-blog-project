@@ -1,78 +1,111 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import API from "../utils/api";
+import { getToken, getUser } from "../utils/auth";
 
 const Chatbot = () => {
-  const [messages, setMessages] = useState([
-    { from: "bot", text: "Hello! I am your assistant 🤖. How can I help you?" },
-  ]);
+  const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
-  const chatEndRef = useRef(null);
+  const [messages, setMessages] = useState([]);
+  const [typing, setTyping] = useState(false);
+  const messagesEndRef = useRef(null);
 
-  const getResponse = (msg) => {
-    msg = msg.toLowerCase();
-    if (msg.includes("login")) return "To login, click on the Login page from the top navbar.";
-    if (msg.includes("register")) return "To register, click on the Register page and fill in the details.";
-    if (msg.includes("logout")) return "To logout, click the Logout button in the Navbar after login.";
-    if (msg.includes("edit blog")) return "If you are the author, you can go to the blog details page and click the Edit button.";
-    if (msg.includes("delete blog")) return "Authors can delete their blog using the Delete button in the blog details or homepage.";
-    if (msg.includes("read full blog")) return "Click on 'Read More' on the blog card to read the full content.";
-    return "Sorry, I can only help with site navigation and blog actions for now.";
+  const currentUser = getUser();
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const handleSend = () => {
-    if (!input.trim()) return;
-    const userMsg = { from: "user", text: input };
-    const botMsg = { from: "bot", text: getResponse(input) };
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, typing]);
 
-    setMessages((prev) => [...prev, userMsg, botMsg]);
+  // Send message handler
+  const sendMessage = async () => {
+    if (!input.trim()) return;
+
+    const userMessage = { sender: "user", text: input };
+    setMessages((prev) => [...prev, userMessage]);
     setInput("");
+    setTyping(true);
+
+    try {
+      const res = await API.post(
+        "/chatbot",
+        { prompt: input },
+        { headers: { Authorization: `Bearer ${getToken()}` } }
+      );
+
+      const botMessage = { sender: "bot", text: res.data.reply };
+      setMessages((prev) => [...prev, botMessage]);
+    } catch (err) {
+      setMessages((prev) => [
+        ...prev,
+        { sender: "bot", text: "Error generating response. Try again." },
+      ]);
+      console.error(err);
+    } finally {
+      setTyping(false);
+    }
   };
 
   const handleKeyPress = (e) => {
-    if (e.key === "Enter") handleSend();
+    if (e.key === "Enter") sendMessage();
   };
 
-  // Auto-scroll to bottom when messages change
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
   return (
-    <div className="fixed bottom-4 right-4 w-80 bg-white shadow-lg rounded-lg border flex flex-col z-50">
-      <div className="p-2 bg-blue-600 text-white rounded-t-lg font-semibold">Site Assistant 🤖</div>
-      
-      {/* Scrollable messages */}
-      <div className="flex-1 p-2 overflow-y-auto max-h-60">
-        {messages.map((m, i) => (
-          <div key={i} className={`mb-2 ${m.from === "bot" ? "text-left" : "text-right"}`}>
-            <span
-              className={`inline-block p-2 rounded-lg ${
-                m.from === "bot" ? "bg-gray-200 text-black" : "bg-blue-600 text-white"
-              }`}
-            >
-              {m.text}
-            </span>
-          </div>
-        ))}
-        <div ref={chatEndRef} />
-      </div>
+    <div className="fixed bottom-4 right-4 z-50">
+      <button
+        className="bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg hover:bg-blue-700"
+        onClick={() => setOpen((prev) => !prev)}
+      >
+        Chat
+      </button>
 
-      {/* Input area */}
-      <div className="flex border-t">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyPress={handleKeyPress}
-          placeholder="Type your message..."
-          className="flex-1 p-2 border-none focus:outline-none rounded-bl-lg"
-        />
-        <button
-          onClick={handleSend}
-          className="bg-blue-600 text-white px-4 rounded-br-lg hover:bg-blue-700"
-        >
-          Send
-        </button>
-      </div>
+      {open && (
+        <div className="w-80 h-96 bg-white shadow-xl rounded-lg flex flex-col mt-2">
+          <div className="bg-blue-600 text-white px-4 py-2 rounded-t-lg font-semibold">
+            Chatbot Assistant
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-2 space-y-2 scrollbar-thin scrollbar-thumb-blue-500 scrollbar-track-gray-200">
+            {messages.map((m, idx) => (
+              <div
+                key={idx}
+                className={`px-2 py-1 rounded ${
+                  m.sender === "user"
+                    ? "bg-blue-100 self-end"
+                    : "bg-gray-200 self-start"
+                }`}
+              >
+                {m.text}
+              </div>
+            ))}
+            {typing && (
+              <div className="px-2 py-1 rounded bg-gray-200 self-start italic text-gray-600">
+                Typing...
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          <div className="p-2 border-t flex">
+            <input
+              type="text"
+              className="flex-1 border rounded px-2 py-1"
+              placeholder="Type a message..."
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyPress={handleKeyPress}
+            />
+            <button
+              onClick={sendMessage}
+              className="bg-blue-600 text-white px-3 py-1 ml-2 rounded hover:bg-blue-700"
+            >
+              Send
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
