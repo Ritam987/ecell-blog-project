@@ -10,43 +10,39 @@ const app = express();
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json()); // Must be before routes
 
-// Serve uploaded images statically (legacy, can keep for other uploads)
+// Serve uploads (legacy)
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Import routes
 const authRoutes = require("./routes/auth");
 const blogRoutes = require("./routes/blogs");
 const userRoutes = require("./routes/users");
-const chatbotRoutes = require("./routes/chatbot"); // Chatbot route
+const chatbotRoutes = require("./routes/chatbot");
 
-// Mount routes
+// Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/blogs", blogRoutes);
 app.use("/api/users", userRoutes);
-app.use("/api/chatbot", chatbotRoutes); // public chatbot endpoint
+app.use("/api/chatbot", chatbotRoutes); // chatbot route
 
 // MongoDB connection
 const mongoURI = process.env.MONGO_URI;
-
 mongoose
   .connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {
     console.log("MongoDB connected");
 
-    // GridFS bucket setup
+    // GridFS bucket for images
     const db = mongoose.connection.db;
-    const bucketName = "blogImages"; // bucket for storing blog images
-    app.locals.gfsBucket = new GridFSBucket(db, { bucketName });
-
-    console.log(`GridFS bucket "${bucketName}" initialized`);
+    app.locals.gfsBucket = new GridFSBucket(db, { bucketName: "blogImages" });
+    console.log('GridFS bucket "blogImages" initialized');
   })
   .catch((err) => console.error("MongoDB connection error:", err));
 
 // Default route
 app.get("/", (req, res) => res.send("E-Cell Blogging Backend is running!"));
 
-// Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
