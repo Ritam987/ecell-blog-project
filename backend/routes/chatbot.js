@@ -44,7 +44,7 @@ router.get("/public", async (req, res) => {
    const data = await response.json();
 
 // Free GPT API might return: data.response OR data.answer OR data.text
-   const aiAnswer = data.response || data.answer || data.text || "Sorry, I could not generate an answer.";
+   aiAnswer = data.response || data.answer || data.text || "Sorry, I could not generate an answer.";
 
 res.status(200).json({ answer: aiAnswer });
     const aiAnswer = data.response || "Sorry, I could not generate an answer.";
