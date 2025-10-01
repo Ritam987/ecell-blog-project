@@ -32,17 +32,21 @@ router.get("/public", async (req, res) => {
     if (ruleAnswer) return res.status(200).json({ answer: ruleAnswer });
 
     // AI response via free GPT API
-    const response = await fetch(
-      `https://free-unoficial-gpt4o-mini-api-g70n.onrender.com/chat/?query=${encodeURIComponent(
-        userQuery
-      )}`,
-      {
+    const response = await fetch(`https://free-unoficial-gpt4o-mini-api-g70n.onrender.com/chat/?query=${encodeURIComponent(
+      userQuery
+    )}`,
+    {
         method: "GET",
         headers: { Accept: "application/json" },
-      }
-    );
+    }
+  );
 
-    const data = await response.json();
+   const data = await response.json();
+
+// Free GPT API might return: data.response OR data.answer OR data.text
+   const aiAnswer = data.response || data.answer || data.text || "Sorry, I could not generate an answer.";
+
+res.status(200).json({ answer: aiAnswer });
     const aiAnswer = data.response || "Sorry, I could not generate an answer.";
 
     res.status(200).json({ answer: aiAnswer });
