@@ -1,87 +1,95 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 
 const Chatbot = () => {
   const [messages, setMessages] = useState([
     { sender: "bot", text: "Hello! I am your assistant. Ask me anything about the site." }
   ]);
   const [input, setInput] = useState("");
-  const messagesEndRef = useRef(null);
+  const [loading, setLoading] = useState(false);
 
-  // Scroll to bottom automatically
+  const chatEndRef = useRef(null);
+
+  // Auto-scroll to latest message
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   const sendMessage = async () => {
     if (!input.trim()) return;
-    const userMessage = input;
-    setMessages(prev => [...prev, { sender: "user", text: userMessage }]);
+
+    const userMsg = { sender: "user", text: input };
+    setMessages(prev => [...prev, userMsg]);
     setInput("");
+    setLoading(true);
 
     try {
-      const res = await fetch(`https://ecell-blog-project.onrender.com/api/chatbot/public?query=${encodeURIComponent(userMessage)}`);
+      const query = encodeURIComponent(input);
+      const res = await fetch(`https://ecell-blog-project.onrender.com/api/chatbot/public?query=${query}`);
       const data = await res.json();
-      setMessages(prev => [...prev, { sender: "bot", text: data.answer }]);
-    } catch (error) {
-      setMessages(prev => [...prev, { sender: "bot", text: `⚠️ Server/network error: ${error.message}` }]);
+
+      const botMsg = { sender: "bot", text: data.answer || "Sorry, I could not get a response." };
+      setMessages(prev => [...prev, botMsg]);
+    } catch (err) {
+      console.error("Chatbot error:", err);
+      const errMsg = { sender: "bot", text: `⚠️ Server/network error: ${err.message}` };
+      setMessages(prev => [...prev, errMsg]);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleKeyPress = (e) => {
+  const handleKeyPress = e => {
     if (e.key === "Enter") sendMessage();
   };
 
   return (
-    <div style={{
-      position: "fixed",
-      bottom: "20px",
-      right: "20px",
-      width: "350px",
-      maxHeight: "400px",
-      border: "1px solid #ccc",
-      borderRadius: "8px",
-      display: "flex",
-      flexDirection: "column",
-      background: "#fff",
-      boxShadow: "0 4px 8px rgba(0,0,0,0.2)",
-      overflow: "hidden"
-    }}>
-      <div style={{ padding: "10px", fontWeight: "bold", background: "#f5f5f5", textAlign: "center" }}>
-        Chatbot
-      </div>
-
-      <div style={{ flex: 1, padding: "10px", overflowY: "auto", scrollbarWidth: "thin" }}>
+    <div className="fixed bottom-4 right-4 w-80 max-h-96 bg-white border border-gray-300 rounded-lg shadow-lg flex flex-col">
+      <div className="flex-1 p-2 overflow-y-auto custom-scrollbar">
         {messages.map((msg, idx) => (
-          <div key={idx} style={{ margin: "5px 0", textAlign: msg.sender === "user" ? "right" : "left" }}>
-            <span style={{
-              display: "inline-block",
-              padding: "8px 12px",
-              borderRadius: "15px",
-              background: msg.sender === "user" ? "#007bff" : "#eee",
-              color: msg.sender === "user" ? "#fff" : "#000",
-              maxWidth: "80%",
-              wordWrap: "break-word"
-            }}>
-              {msg.text}
-            </span>
+          <div
+            key={idx}
+            className={`my-1 p-2 rounded-md ${
+              msg.sender === "user" ? "bg-blue-100 self-end" : "bg-gray-100 self-start"
+            }`}
+          >
+            {msg.text}
           </div>
         ))}
-        <div ref={messagesEndRef} />
+        <div ref={chatEndRef} />
       </div>
-
-      <div style={{ display: "flex", borderTop: "1px solid #ccc" }}>
+      <div className="p-2 border-t border-gray-200 flex">
         <input
           type="text"
           value={input}
           onChange={e => setInput(e.target.value)}
-          onKeyDown={handleKeyPress}
+          onKeyPress={handleKeyPress}
           placeholder="Type your message..."
-          style={{ flex: 1, padding: "10px", border: "none", outline: "none" }}
+          className="flex-1 border border-gray-300 rounded-l px-2 py-1 focus:outline-none"
         />
-        <button onClick={sendMessage} style={{ padding: "10px", background: "#007bff", color: "#fff", border: "none" }}>
-          Send
+        <button
+          onClick={sendMessage}
+          className="bg-blue-500 text-white px-3 py-1 rounded-r hover:bg-blue-600"
+          disabled={loading}
+        >
+          {loading ? "..." : "Send"}
         </button>
       </div>
+
+      {/* Custom scrollbar style */}
+      <style>
+        {`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background-color: rgba(0,0,0,0.3);
+          border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        `}
+      </style>
     </div>
   );
 };
