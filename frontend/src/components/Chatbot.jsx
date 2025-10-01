@@ -1,146 +1,112 @@
+// src/components/Chatbot.jsx
 import React, { useState, useRef, useEffect } from "react";
 
 const Chatbot = () => {
   const [messages, setMessages] = useState([
-    { sender: "bot", text: "Hello! I am your assistant. Ask me anything about the site." }
+    { type: "bot", text: "Hello! I am your assistant. Ask me anything about the site." },
   ]);
   const [input, setInput] = useState("");
-  const messagesEndRef = useRef(null);
   const [loading, setLoading] = useState(false);
+  const chatEndRef = useRef(null);
 
-  // Auto-scroll to bottom
+  // Auto scroll to latest message
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   const handleSend = async () => {
     if (!input.trim()) return;
 
-    const userMessage = { sender: "user", text: input };
+    const userMessage = { type: "user", text: input };
     setMessages(prev => [...prev, userMessage]);
     setInput("");
     setLoading(true);
 
     try {
-      const response = await fetch(
-        `https://ecell-blog-project.onrender.com/api/chatbot/public?query=${encodeURIComponent(input)}`
+      const res = await fetch(
+        `https://ecell-blog-project.onrender.com/api/chatbot/public?query=${encodeURIComponent(input)}`,
+        { method: "GET" }
       );
-      const data = await response.json();
 
-      const botMessage = { sender: "bot", text: data.answer || "Sorry, I could not generate a response." };
+      if (!res.ok) {
+        throw new Error(`Server error: ${res.status} ${res.statusText}`);
+      }
+
+      const data = await res.json();
+      const botMessage = {
+        type: "bot",
+        text: data.answer || "Sorry, I could not generate a response.",
+      };
       setMessages(prev => [...prev, botMessage]);
     } catch (err) {
-      const errorMessage = { sender: "bot", text: `⚠️ Server/network error: ${err.message}` };
-      setMessages(prev => [...prev, errorMessage]);
+      const errorMsg = {
+        type: "bot",
+        text: `⚠️ Server/network error: ${err.message}`,
+      };
+      setMessages(prev => [...prev, errorMsg]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleKeyPress = e => {
+  const handleKeyPress = (e) => {
     if (e.key === "Enter") handleSend();
   };
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        bottom: "20px",
-        right: "20px",
-        width: "320px",
-        height: "400px",
-        border: "1px solid #ccc",
-        borderRadius: "8px",
-        backgroundColor: "#fff",
-        display: "flex",
-        flexDirection: "column",
-        boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-        fontFamily: "Arial, sans-serif",
-        zIndex: 1000
-      }}
-    >
-      {/* Chat header */}
+    <div className="fixed bottom-4 right-4 w-80 max-w-full bg-white border shadow-lg rounded-lg flex flex-col">
+      <div className="bg-blue-500 text-white px-4 py-2 rounded-t-lg font-bold">Chatbot</div>
       <div
-        style={{
-          padding: "10px",
-          backgroundColor: "#0077ff",
-          color: "#fff",
-          fontWeight: "bold",
-          borderTopLeftRadius: "8px",
-          borderTopRightRadius: "8px"
-        }}
-      >
-        Chatbot
-      </div>
-
-      {/* Chat messages */}
-      <div
-        style={{
-          flex: 1,
-          padding: "10px",
-          overflowY: "auto",
-          scrollbarWidth: "thin",
-          scrollbarColor: "#0077ff #e0e0e0"
-        }}
+        className="flex-1 p-4 overflow-y-auto custom-scrollbar"
+        style={{ maxHeight: "300px" }}
       >
         {messages.map((msg, idx) => (
           <div
             key={idx}
-            style={{
-              marginBottom: "8px",
-              textAlign: msg.sender === "user" ? "right" : "left"
-            }}
+            className={`mb-2 p-2 rounded ${
+              msg.type === "user" ? "bg-gray-200 text-right" : "bg-gray-100 text-left"
+            }`}
           >
-            <span
-              style={{
-                display: "inline-block",
-                padding: "6px 12px",
-                borderRadius: "16px",
-                backgroundColor: msg.sender === "user" ? "#0077ff" : "#f0f0f0",
-                color: msg.sender === "user" ? "#fff" : "#000",
-                maxWidth: "80%",
-                wordWrap: "break-word",
-                fontSize: "14px"
-              }}
-            >
-              {msg.text}
-            </span>
+            {msg.text}
           </div>
         ))}
-        <div ref={messagesEndRef} />
+        <div ref={chatEndRef} />
       </div>
-
-      {/* Input box */}
-      <div style={{ display: "flex", borderTop: "1px solid #ccc" }}>
+      <div className="flex border-t p-2">
         <input
           type="text"
           value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyPress={handleKeyPress}
-          placeholder="Type a message..."
-          style={{
-            flex: 1,
-            padding: "10px",
-            border: "none",
-            borderRadius: "0 0 0 8px",
-            outline: "none"
-          }}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyPress}
+          placeholder="Type your message..."
+          className="flex-1 border rounded px-2 py-1"
         />
         <button
           onClick={handleSend}
+          className="ml-2 bg-blue-500 text-white px-4 py-1 rounded hover:bg-blue-600"
           disabled={loading}
-          style={{
-            padding: "0 15px",
-            backgroundColor: "#0077ff",
-            color: "#fff",
-            border: "none",
-            cursor: "pointer",
-            borderRadius: "0 0 8px 0"
-          }}
         >
           {loading ? "..." : "Send"}
         </button>
       </div>
+
+      {/* Custom scrollbar styling */}
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #888;
+          border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #555;
+        }
+      `}</style>
     </div>
   );
 };
