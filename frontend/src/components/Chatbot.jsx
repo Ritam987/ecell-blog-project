@@ -1,109 +1,125 @@
 import React, { useState, useRef, useEffect } from "react";
-import axios from "axios";
 
 const Chatbot = () => {
   const [messages, setMessages] = useState([
-    { sender: "bot", text: "Hello! I am your assistant. Ask me anything about the site." },
+    { from: "bot", text: "Hello! I am your assistant. Ask me anything about the site." },
   ]);
   const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const chatEndRef = useRef(null);
+  const messagesEndRef = useRef(null);
 
-  // Auto-scroll to latest message
+  // Auto-scroll
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   const sendMessage = async () => {
     if (!input.trim()) return;
-
-    const userMessage = { sender: "user", text: input };
-    setMessages((prev) => [...prev, userMessage]);
+    const userMsg = input;
+    setMessages((prev) => [...prev, { from: "user", text: userMsg }]);
     setInput("");
-    setLoading(true);
 
     try {
-      const res = await axios.post(
-        "https://ecell-blog-project.onrender.com/api/chatbot/public",
-        { message: input }
+      const res = await fetch(
+        `https://ecell-blog-project.onrender.com/api/chatbot/public?query=${encodeURIComponent(userMsg)}`
       );
-
-      const botReply = res.data.answer || "No response from server.";
-      setMessages((prev) => [...prev, { sender: "bot", text: botReply }]);
+      const data = await res.json();
+      setMessages((prev) => [...prev, { from: "bot", text: data.answer }]);
     } catch (err) {
-      console.error("Chatbot error:", err);
       setMessages((prev) => [
         ...prev,
-        {
-          sender: "bot",
-          text: `⚠️ Server/network error: ${err.response?.data?.answer || err.message}`,
-        },
+        { from: "bot", text: "⚠️ Server/network error: " + err.message },
       ]);
-    } finally {
-      setLoading(false);
     }
   };
 
-  const handleKeyPress = (e) => {
+  const handleKeyDown = (e) => {
     if (e.key === "Enter") sendMessage();
   };
 
   return (
-    <div className="fixed bottom-4 right-4 w-80 bg-white shadow-lg rounded-lg flex flex-col border border-gray-300 z-50">
-      <div className="bg-blue-600 text-white px-4 py-2 rounded-t-lg font-semibold">
+    <div style={{
+      position: "fixed",
+      bottom: "20px",
+      right: "20px",
+      width: "350px",
+      height: "450px",
+      backgroundColor: "#fff",
+      border: "1px solid #ccc",
+      borderRadius: "10px",
+      boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+      display: "flex",
+      flexDirection: "column",
+      overflow: "hidden",
+      fontFamily: "Arial, sans-serif"
+    }}>
+      {/* Chat header */}
+      <div style={{
+        padding: "10px",
+        backgroundColor: "#0077ff",
+        color: "#fff",
+        fontWeight: "bold",
+        textAlign: "center"
+      }}>
         Chatbot
       </div>
-      <div
-        className="flex-1 p-3 overflow-y-auto space-y-2"
-        style={{ maxHeight: "300px", scrollbarWidth: "thin" }}
-      >
+
+      {/* Chat messages */}
+      <div style={{
+        flex: 1,
+        padding: "10px",
+        overflowY: "auto",
+        scrollbarWidth: "thin",
+      }}>
         {messages.map((msg, idx) => (
-          <div
-            key={idx}
-            className={`p-2 rounded-md ${
-              msg.sender === "user" ? "bg-blue-100 text-right ml-auto" : "bg-gray-100"
-            }`}
-          >
-            {msg.text}
+          <div key={idx} style={{
+            margin: "5px 0",
+            textAlign: msg.from === "user" ? "right" : "left"
+          }}>
+            <span style={{
+              display: "inline-block",
+              padding: "8px 12px",
+              borderRadius: "15px",
+              backgroundColor: msg.from === "user" ? "#0077ff" : "#f1f0f0",
+              color: msg.from === "user" ? "#fff" : "#000",
+              maxWidth: "80%",
+              wordWrap: "break-word"
+            }}>
+              {msg.text}
+            </span>
           </div>
         ))}
-        <div ref={chatEndRef} />
+        <div ref={messagesEndRef} />
       </div>
-      <div className="flex border-t border-gray-300 p-2">
+
+      {/* Input box */}
+      <div style={{ display: "flex", borderTop: "1px solid #ccc" }}>
         <input
           type="text"
-          className="flex-1 border rounded px-2 py-1"
-          placeholder="Type a message..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyPress={handleKeyPress}
-          disabled={loading}
+          onKeyDown={handleKeyDown}
+          placeholder="Type your message..."
+          style={{
+            flex: 1,
+            padding: "10px",
+            border: "none",
+            outline: "none",
+            fontSize: "14px"
+          }}
         />
         <button
           onClick={sendMessage}
-          className="ml-2 bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
-          disabled={loading}
+          style={{
+            padding: "10px",
+            backgroundColor: "#0077ff",
+            color: "#fff",
+            border: "none",
+            cursor: "pointer"
+          }}
         >
-          {loading ? "..." : "Send"}
+          Send
         </button>
       </div>
-      {/* Custom scrollbar styling */}
-      <style>{`
-        div::-webkit-scrollbar {
-          width: 6px;
-        }
-        div::-webkit-scrollbar-track {
-          background: #f1f1f1;
-          border-radius: 10px;
-        }
-        div::-webkit-scrollbar-thumb {
-          background: #888;
-          border-radius: 10px;
-        }
-        div::-webkit-scrollbar-thumb:hover {
-          background: #555;
-        }
-      `}</style>
     </div>
   );
 };
