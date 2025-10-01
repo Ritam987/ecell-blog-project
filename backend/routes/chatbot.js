@@ -1,60 +1,34 @@
-import express from "express";
-import fetch from "node-fetch";
-
+// routes/chatbot.js
+const express = require("express");
 const router = express.Router();
+const axios = require("axios");
 
-// Public endpoint (no authentication)
 router.post("/public", async (req, res) => {
   try {
-    const { message } = req.body;
+    const prompt = req.body.prompt;
+    if (!prompt) return res.status(400).json({ message: "Prompt required" });
 
-    if (!message || message.trim() === "") {
-      return res.status(400).json({ error: "Message is required" });
-    }
-
-    // Check if query is "write a blog"
-    const isBlogRequest = message.toLowerCase().includes("write a blog");
-
-    // Call OpenAI API
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content: "You are a helpful hybrid chatbot. You can answer rules-based questions and generate blogs if asked.",
-          },
-          {
-            role: "user",
-            content: message,
-          },
-        ],
+    const openaiRes = await axios.post(
+      "https://api.openai.com/v1/completions",
+      {
+        model: "text-davinci-003",
+        prompt,
         max_tokens: 500,
-      }),
-    });
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        },
+      }
+    );
 
-    if (!response.ok) {
-      const error = await response.text();
-      console.error("OpenAI API Error:", error);
-      return res.status(500).json({ error: "Failed to fetch from OpenAI API" });
-    }
-
-    const data = await response.json();
-    const reply = data.choices[0].message.content;
-
-    res.json({
-      reply,
-      isBlog: isBlogRequest, // frontend can use this to show "Save Blog" later if needed
-    });
+    const botResponse = openaiRes.data.choices[0].text.trim();
+    res.json({ response: botResponse });
   } catch (err) {
-    console.error("Chatbot error:", err);
-    res.status(500).json({ error: "Server error. Please try again later." });
+    console.error("Chatbot error:", err.message);
+    res.status(500).json({ response: "⚠️ Server error. Try again." });
   }
 });
 
-export default router;
+module.exports = router;
