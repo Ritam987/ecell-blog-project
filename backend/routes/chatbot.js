@@ -1,51 +1,62 @@
 const express = require("express");
 const router = express.Router();
 const axios = require("axios");
+require("dotenv").config();
 
-// Public Chatbot endpoint (no authentication required)
+// Public chatbot endpoint - no authentication
 router.post("/public", async (req, res) => {
-  const { message } = req.body;
-  if (!message || message.trim() === "") {
-    return res.status(400).json({ message: "Message is required" });
-  }
-
-  const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-  if (!OPENAI_API_KEY) {
-    console.error("OpenAI API key not found in environment variables");
-    return res.status(500).json({ message: "Server configuration error" });
+  const userMessage = req.body.message;
+  if (!userMessage) {
+    return res.status(400).json({ answer: "⚠️ No message provided." });
   }
 
   try {
-    const response = await axios.post(
+    // Example rule-based responses
+    const lowerMsg = userMessage.toLowerCase();
+    let ruleBasedResponse = null;
+
+    if (lowerMsg.includes("how to login")) {
+      ruleBasedResponse = "To login, click the 'Login' button at the top right and enter your credentials.";
+    } else if (lowerMsg.includes("how to register")) {
+      ruleBasedResponse = "To register, click 'Register', fill in the details, and submit the form.";
+    } else if (lowerMsg.includes("edit blog")) {
+      ruleBasedResponse = "If you are the author, visit your blog and click the 'Edit' button.";
+    } else if (lowerMsg.includes("delete blog")) {
+      ruleBasedResponse = "Authors can delete their blogs using the 'Delete' button on their blog page.";
+    } else if (lowerMsg.includes("read full blog")) {
+      ruleBasedResponse = "Click 'Read More' on a blog to see its full content.";
+    }
+
+    if (ruleBasedResponse) {
+      return res.json({ answer: ruleBasedResponse });
+    }
+
+    // Otherwise, fallback to AI (OpenAI GPT-3.5 / GPT-4)
+    const openaiResponse = await axios.post(
       "https://api.openai.com/v1/chat/completions",
       {
         model: "gpt-3.5-turbo",
-        messages: [
-          {
-            role: "user",
-            content: message,
-          },
-        ],
-        max_tokens: 600,
-        temperature: 0.7,
+        messages: [{ role: "user", content: userMessage }],
+        max_tokens: 500,
       },
       {
         headers: {
-          Authorization: `Bearer ${OPENAI_API_KEY}`,
           "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
         },
-        timeout: 15000, // 15 seconds
       }
     );
 
-    const answer = response.data.choices[0].message.content;
-    res.status(200).json({ answer });
+    const aiAnswer = openaiResponse.data.choices[0].message.content;
+    return res.json({ answer: aiAnswer });
   } catch (err) {
-    console.error("Chatbot error:", err.message || err);
-    if (err.response) {
-      console.error("OpenAI response error:", err.response.data);
-    }
-    res.status(500).json({ message: "Server error. Check backend logs." });
+    console.error("Chatbot backend error:", err.response?.data || err.message);
+    return res.status(500).json({
+      answer:
+        err.response?.data?.error?.message ||
+        err.message ||
+        "⚠️ Server error while generating response. Try again.",
+    });
   }
 });
 
