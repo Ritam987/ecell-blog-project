@@ -10,34 +10,35 @@ const app = express();
 
 // Middleware
 app.use(cors());
-app.use(express.json()); // Must be before routes
+app.use(express.json());
 
-// Serve uploads (legacy)
+// Serve uploaded images statically (legacy)
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// Import routes
+// Routes
 const authRoutes = require("./routes/auth");
 const blogRoutes = require("./routes/blogs");
 const userRoutes = require("./routes/users");
 const chatbotRoutes = require("./routes/chatbot");
 
-// Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/blogs", blogRoutes);
 app.use("/api/users", userRoutes);
-app.use("/api/chatbot", chatbotRoutes); // chatbot route
+app.use("/api/chatbot", chatbotRoutes); // Chatbot route
 
 // MongoDB connection
 const mongoURI = process.env.MONGO_URI;
+
 mongoose
   .connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {
     console.log("MongoDB connected");
 
-    // GridFS bucket for images
+    // GridFS bucket setup
     const db = mongoose.connection.db;
-    app.locals.gfsBucket = new GridFSBucket(db, { bucketName: "blogImages" });
-    console.log('GridFS bucket "blogImages" initialized');
+    const bucketName = "blogImages";
+    app.locals.gfsBucket = new GridFSBucket(db, { bucketName });
+    console.log(`GridFS bucket "${bucketName}" initialized`);
   })
   .catch((err) => console.error("MongoDB connection error:", err));
 
