@@ -1,79 +1,107 @@
-import React, { useState } from "react";
+// src/components/Chatbot.jsx
+import React, { useState, useEffect, useRef } from "react";
+import axios from "axios";
 
-export default function Chatbot() {
-  const [messages, setMessages] = useState([]);
+const Chatbot = () => {
+  const [open, setOpen] = useState(false);
+  const [messages, setMessages] = useState([
+    { text: "Hi! I'm your assistant. Ask me about blog actions or anything else.", type: "bot" },
+  ]);
   const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
+  const messagesEndRef = useRef(null);
 
-  const sendMessage = async () => {
+  // Auto-scroll to latest message
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+  useEffect(scrollToBottom, [messages]);
+
+  const handleSend = async () => {
     if (!input.trim()) return;
 
-    const userMessage = { sender: "user", text: input };
-    setMessages((prev) => [...prev, userMessage]);
+    const userMsg = { text: input, type: "user" };
+    setMessages((prev) => [...prev, userMsg]);
+    const query = input.trim().toLowerCase();
     setInput("");
-    setLoading(true);
 
     try {
-      const res = await fetch("https://your-backend-url.onrender.com/chatbot/public", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: input }),
-      });
+      // RULES-BASED RESPONSES
+      const rulesResponses = {
+        "how to login": "Go to the login page, enter your credentials and click 'Login'.",
+        "how to register": "Go to the register page, fill details, and click 'Register'.",
+        "how to logout": "Click on the logout button in the navbar to log out.",
+        "how to create blog": "Go to 'Create Blog' page and fill title, content, tags, and image.",
+        "how to edit blog": "Open your blog, click 'Edit', modify details and save.",
+        "how to delete blog": "Open your blog, click 'Delete', and confirm deletion.",
+        "how to read full blog": "Click 'Read More' on any blog to view full content.",
+      };
 
-      if (!res.ok) {
-        throw new Error("Server error");
+      if (rulesResponses[query]) {
+        setMessages((prev) => [...prev, { text: rulesResponses[query], type: "bot" }]);
+        return;
       }
 
-      const data = await res.json();
-      const botMessage = { sender: "bot", text: data.reply };
-
-      setMessages((prev) => [...prev, botMessage]);
+      // AI RESPONSE via backend API
+      const res = await axios.post(`${process.env.REACT_APP_API_URL || "https://ecell-blog-project.onrender.com"}/api/chatbot/public`, { prompt: input });
+      setMessages((prev) => [...prev, { text: res.data.response, type: "bot" }]);
     } catch (err) {
-      console.error(err);
-      setMessages((prev) => [
-        ...prev,
-        { sender: "bot", text: "⚠️ Server error. Please try again." },
-      ]);
-    } finally {
-      setLoading(false);
+      setMessages((prev) => [...prev, { text: "⚠️ Server error. Try again.", type: "bot" }]);
     }
   };
 
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter") handleSend();
+  };
+
   return (
-    <div className="fixed bottom-5 right-5 w-96 bg-white shadow-lg rounded-lg border">
-      <div className="p-3 bg-blue-600 text-white font-bold rounded-t-lg">
-        AI Chatbot
-      </div>
-      <div className="p-3 h-80 overflow-y-auto">
-        {messages.map((msg, i) => (
+    <div style={{ position: "fixed", bottom: 20, right: 20, width: 300, zIndex: 999 }}>
+      {/* Toggle Button */}
+      <button
+        onClick={() => setOpen(!open)}
+        className="bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg hover:bg-blue-700"
+      >
+        {open ? "Close" : "Chat"}
+      </button>
+
+      {/* Chat Box */}
+      {open && (
+        <div className="mt-2 bg-white shadow-lg rounded-lg flex flex-col" style={{ height: 400 }}>
           <div
-            key={i}
-            className={`my-2 p-2 rounded-lg ${
-              msg.sender === "user"
-                ? "bg-blue-100 text-right"
-                : "bg-gray-100 text-left"
-            }`}
+            className="p-3 overflow-y-auto"
+            style={{ flex: 1, maxHeight: "100%", scrollbarWidth: "thin", scrollbarColor: "#888 #f1f1f1" }}
           >
-            {msg.text}
+            {messages.map((msg, idx) => (
+              <div
+                key={idx}
+                className={`mb-2 p-2 rounded ${msg.type === "bot" ? "bg-gray-200 self-start" : "bg-blue-500 text-white self-end"}`}
+              >
+                {msg.text}
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
           </div>
-        ))}
-        {loading && <div className="text-gray-500">Thinking...</div>}
-      </div>
-      <div className="flex p-3 border-t">
-        <input
-          type="text"
-          className="flex-1 border rounded-l-lg px-2 py-1"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask me anything..."
-        />
-        <button
-          onClick={sendMessage}
-          className="bg-blue-600 text-white px-3 py-1 rounded-r-lg"
-        >
-          Send
-        </button>
-      </div>
+
+          {/* Input Box */}
+          <div className="flex border-t p-2">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyPress}
+              placeholder="Type your message..."
+              className="flex-1 border rounded px-2 py-1"
+            />
+            <button
+              onClick={handleSend}
+              className="ml-2 bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+            >
+              Send
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
-}
+};
+
+export default Chatbot;
