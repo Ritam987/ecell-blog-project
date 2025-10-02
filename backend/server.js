@@ -41,11 +41,11 @@ app.use("/api/blogs", blogRoutes);
 app.use("/api/users", userRoutes);
 
 // Serve React build
-app.use(express.static(path.join(__dirname, "frontend/build")));
+app.use(express.static(path.join(__dirname, "./frontend")));
 
 // Catch-all route to handle React Router refresh (must be AFTER API routes)
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "frontend/build", "index.html"));
+  res.sendFile(path.join(__dirname, "./frontend", "index.html"));
 });
 
 // Default route
@@ -53,3 +53,4 @@ app.get("/api", (req, res) => res.send("E-Cell Blogging Backend is running!"));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
