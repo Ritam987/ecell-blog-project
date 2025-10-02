@@ -47,16 +47,17 @@ mongoose
 app.get("/api", (req, res) => res.send("E-Cell Blogging Backend is running!"));
 
 // ✅ Serve React frontend build
-app.use(express.static(path.join(__dirname, "../frontend")));
+app.use(express.static(path.join(__dirname, "./frontend")));
 
 // ✅ Fix for React Router refresh: always return index.html for unknown routes
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../frontend", "index.html"));
+  res.sendFile(path.join(__dirname, "./frontend", "index.html"));
 });
 
 // Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+
 
 
 
