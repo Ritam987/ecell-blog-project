@@ -46,17 +46,16 @@ app.use("/api/blogs", blogRoutes);
 app.use("/api/users", userRoutes);
 
 // Serve React frontend
-const frontendBuildPath = path.join(__dirname, "..", "frontend", "build");
+const path = require("path");
+
+// Serve React from the frontend build folder
+const frontendBuildPath = path.join(__dirname, "./frontend/build");
 app.use(express.static(frontendBuildPath));
 
-// Wildcard route to handle React routing & refresh
 app.get("*", (req, res) => {
-  if (req.path.startsWith("/api")) {
-    // API route not found
-    return res.status(404).json({ message: "API route not found" });
-  }
   res.sendFile(path.join(frontendBuildPath, "index.html"));
 });
+
 
 // Default root route
 app.get("/", (req, res) => res.send("E-Cell Blogging Backend is running!"));
@@ -64,3 +63,4 @@ app.get("/", (req, res) => res.send("E-Cell Blogging Backend is running!"));
 // Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
