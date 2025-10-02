@@ -21,16 +21,17 @@ app.use("/api/blogs", blogRoutes);
 app.use("/api/users", userRoutes);
 
 // Serve React build (frontend)
-app.use(express.static(path.join(__dirname, "../frontend/build")));
+const frontendBuildPath = path.join(__dirname, "..", "frontend", "build");
 
-// Catch-all: serve index.html for all non-API routes
+app.use(express.static(frontendBuildPath));
+
 app.get("*", (req, res) => {
   if (req.path.startsWith("/api")) {
-    // If API route not found, return 404
-    res.status(404).json({ message: "API route not found" });
-  } else {
-    res.sendFile(path.join(__dirname, "../frontend/build", "index.html"));
+    return res.status(404).json({ message: "API route not found" });
   }
+  res.sendFile(path.join(frontendBuildPath, "index.html"));
+});
+
 });
 
 // MongoDB connection
@@ -41,3 +42,4 @@ mongoose
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
