@@ -13,12 +13,12 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
-const chatbotRoutes = require("./routes/chatbot");
+
 const authRoutes = require("./routes/auth");
 const blogRoutes = require("./routes/blogs");
 const userRoutes = require("./routes/users");
 
-app.use("/api/chatbot", chatbotRoutes);
+
 app.use("/api/auth", authRoutes);
 app.use("/api/blogs", blogRoutes);
 app.use("/api/users", userRoutes);
@@ -57,3 +57,4 @@ app.get("*", (req, res) => {
 // Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+
