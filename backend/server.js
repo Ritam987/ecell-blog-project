@@ -46,7 +46,7 @@ app.use("/api/blogs", blogRoutes);
 app.use("/api/users", userRoutes);
 
 // Serve React frontend
-const path = require("path");
+
 
 // Serve React from the frontend build folder
 const frontendBuildPath = path.join(__dirname, "./frontend/build");
@@ -63,4 +63,5 @@ app.get("/", (req, res) => res.send("E-Cell Blogging Backend is running!"));
 // Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
 
