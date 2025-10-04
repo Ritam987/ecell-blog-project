@@ -32,14 +32,8 @@ const auth = async (req, res, next) => {
       return res.status(401).json({ message: "User not found" });
     }
 
-    // Attach simplified user info to request for easy role/id access
-    req.user = {
-      id: user._id.toString(),
-      name: user.name,
-      email: user.email,
-      role: user.role, // ensure role is available
-    };
-
+    // Attach user to request
+    req.user = user;
     next();
   } catch (err) {
     console.error("Auth middleware error:", err.message);
