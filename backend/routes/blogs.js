@@ -100,35 +100,28 @@ router.get("/image/:id", async (req, res) => {
 });
 
 // UPDATE BLOG
-router.put("/:id", auth, upload.single("image"), async (req, res) => {
+router.put("/:id", async (req, res) => {
   try {
     const blog = await Blog.findById(req.params.id);
-    if (!blog) return res.status(404).json({ message: "Blog not found" });
 
-    if (blog.author.toString() !== req.user._id.toString())
-      return res.status(403).json({ message: "Unauthorized" });
-
-    if (req.file) {
-      // Delete previous image if exists
-      if (blog.image) {
-        blogImagesBucket.delete(blog.image, (err) => {
-          if (err) console.error("Previous image deletion error:", err);
-        });
-      }
-
-      const uploadStream = blogImagesBucket.openUploadStream(req.file.originalname, {
-        contentType: req.file.mimetype,
-      });
-      uploadStream.end(req.file.buffer);
-      blog.image = uploadStream.id;
+    if (!blog) {
+      return res.status(404).json({ message: "Blog not found" });
     }
 
-    Object.assign(blog, req.body);
-    await blog.save();
-    res.status(200).json(blog);
+    // Allow the author OR an admin to edit
+    if (blog.author.toString() !== req.user.id && req.user.role !== "admin") {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const updatedBlog = await Blog.findByIdAndUpdate(
+      req.params.id,
+      { $set: req.body },
+      { new: true }
+    );
+
+    res.json(updatedBlog);
   } catch (err) {
-    console.error("Update blog error:", err);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: err.message });
   }
 });
 
@@ -207,3 +200,4 @@ router.get("/:id/comments", async (req, res) => {
 });
 
 module.exports = router;
+
