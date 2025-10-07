@@ -108,7 +108,10 @@ const BlogDetails = () => {
         <div className="space-y-2 mb-4">
           {comments.map((c) => (
             <div key={c._id} className="border p-2 rounded">
-              <p className="font-semibold">{c.user.name}</p>
+              {/* Show authorName if user is deleted */}
+              <p className="font-semibold">
+                {c.user?.name || c.authorName || "Deleted User"}
+              </p>
               <p>{c.text}</p>
             </div>
           ))}
