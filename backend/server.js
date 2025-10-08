@@ -19,12 +19,12 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 const authRoutes = require("./routes/auth");
 const blogRoutes = require("./routes/blogs");
 const userRoutes = require("./routes/users");
-const chatbotRoutes = require("./routes/chatbot");
+
 
 app.use("/api/auth", authRoutes);
 app.use("/api/blogs", blogRoutes);
 app.use("/api/users", userRoutes);
-app.use("/api/chatbot", chatbotRoutes); // chatbot route
+
 
 // MongoDB connection
 const mongoURI = process.env.MONGO_URI;
@@ -47,3 +47,4 @@ app.get("/", (req, res) => res.send("E-Cell Blogging Backend is running!"));
 // Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
