@@ -32,7 +32,7 @@ const BlogList = () => {
     fetchBlogs();
   }, []);
 
-  // Entrance animation variants
+  // Entrance animation variants for Framer Motion
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0 },
@@ -40,14 +40,15 @@ const BlogList = () => {
 
   return (
     <div className="max-w-4xl mx-auto mt-10 space-y-6 px-4">
-      {blogs.map((blog) => (
+      {blogs.map((blog, index) => (
         <motion.div
           key={blog._id}
           className="p-6 rounded-2xl border-4 shadow-neon cursor-pointer neon-border"
           variants={cardVariants}
           initial="hidden"
           animate="visible"
-          transition={{ duration: 0.5 }}
+          transition={{ delay: index * 0.1, duration: 0.5 }}
+          whileHover={{ scale: 1.03, boxShadow: "0 0 20px #0ff, 0 0 30px #ff00ff, 0 0 40px #39ff14" }}
         >
           {blog.image && (
             <img
@@ -97,19 +98,23 @@ const BlogList = () => {
         /* Continuous neon border animation */
         @keyframes borderGradient {
           0% { border-color: #0ff; }
-          25% { border-color: #ff00ff; }
-          50% { border-color: #39ff14; }
-          75% { border-color: #ff0; }
+          12.5% { border-color: #ff00ff; }
+          25% { border-color: #39ff14; }
+          37.5% { border-color: #ff0; }
+          50% { border-color: #ff00ff; }
+          62.5% { border-color: #0ff; }
+          75% { border-color: #39ff14; }
+          87.5% { border-color: #ff0; }
           100% { border-color: #0ff; }
         }
         .neon-border {
           background-color: #0a0a0a;
           border-color: #0ff;
-          animation: borderGradient 4s infinite linear;
+          animation: borderGradient 6s infinite linear;
         }
         .neon-border-img {
           border-color: #ff00ff;
-          animation: borderGradient 4s infinite linear;
+          animation: borderGradient 6s infinite linear;
         }
       `}</style>
     </div>
