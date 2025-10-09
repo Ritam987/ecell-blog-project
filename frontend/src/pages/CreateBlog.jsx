@@ -90,18 +90,19 @@ const CreateBlog = () => {
           />
           <label
             htmlFor="fileInput"
-            className="inline-block bg-darkBg text-neonBlue px-4 py-2 rounded cursor-pointer
-                       hover:bg-neonBlue hover:text-darkBg transition-all duration-300 shadow-neon"
+            className="inline-block px-4 py-2 rounded cursor-pointer text-darkBg bg-neonBlue font-semibold 
+                       animate-neonGlow shadow-neon transition-all duration-300"
           >
             {image ? "Change File" : "Choose File"}
           </label>
         </div>
 
+        {/* Preview image with neon border */}
         {preview && (
           <img
             src={preview}
             alt="Preview"
-            className="w-full h-64 object-cover rounded-md mt-2"
+            className="w-full h-64 object-cover rounded-md mt-2 border-4 border-neonBlue shadow-neon animate-neonGlow"
           />
         )}
 
@@ -112,6 +113,21 @@ const CreateBlog = () => {
           Create
         </button>
       </form>
+
+      {/* Custom neon glow animation */}
+      <style jsx>{`
+        @keyframes neonGlow {
+          0%, 100% { box-shadow: 0 0 5px #39ff14, 0 0 10px #39ff14, 0 0 20px #39ff14; }
+          50% { box-shadow: 0 0 20px #39ff14, 0 0 30px #39ff14, 0 0 40px #39ff14; }
+        }
+        .animate-neonGlow {
+          animation: neonGlow 1.5s infinite alternate;
+        }
+        .bg-neonBlue { background-color: #0ff; }
+        .text-darkBg { color: #0a0a0a; }
+        .shadow-neon { box-shadow: 0 0 10px #0ff, 0 0 20px #0ff; }
+        .border-neonBlue { border-color: #0ff; }
+      `}</style>
     </div>
   );
 };
