@@ -32,7 +32,7 @@ const BlogList = () => {
     fetchBlogs();
   }, []);
 
-  // Framer Motion card animation variants
+  // Entrance animation variants
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0 },
@@ -43,21 +43,17 @@ const BlogList = () => {
       {blogs.map((blog) => (
         <motion.div
           key={blog._id}
-          className="bg-darkBg p-6 rounded-2xl border-4 border-neonBlue shadow-neon cursor-pointer"
+          className="p-6 rounded-2xl border-4 shadow-neon cursor-pointer neon-border"
           variants={cardVariants}
           initial="hidden"
           animate="visible"
-          whileHover={{
-            scale: 1.03,
-            boxShadow: "0 0 15px #0ff, 0 0 30px #ff00ff, 0 0 45px #39ff14",
-          }}
-          transition={{ duration: 0.3 }}
+          transition={{ duration: 0.5 }}
         >
           {blog.image && (
             <img
               src={`https://ecell-blog-project.onrender.com/api/blogs/image/${blog.image}`}
               alt={blog.title}
-              className="w-full h-64 object-cover rounded mb-4 border-2 border-neonPink shadow-neon"
+              className="w-full h-64 object-cover rounded mb-4 border-2 shadow-neon neon-border-img"
             />
           )}
           <h2 className="text-2xl font-bold text-neonBlue mb-1">{blog.title}</h2>
@@ -83,18 +79,37 @@ const BlogList = () => {
         </motion.div>
       ))}
 
-      {/* Neon glow styles */}
+      {/* Neon glow animation styles */}
       <style jsx>{`
         .bg-darkBg { background-color: #0a0a0a; }
         .text-darkBg { color: #0a0a0a; }
         .text-neonBlue { color: #0ff; }
         .text-neonPink { color: #ff00ff; }
         .bg-neonBlue { background-color: #0ff; }
+
         .shadow-neon {
           box-shadow: 0 0 10px #0ff, 0 0 20px #ff00ff, 0 0 30px #39ff14;
         }
-        .shadow-neonHover {
+        .shadow-neonHover:hover {
           box-shadow: 0 0 15px #0ff, 0 0 30px #ff00ff, 0 0 45px #39ff14;
+        }
+
+        /* Continuous neon border animation */
+        @keyframes borderGradient {
+          0% { border-color: #0ff; }
+          25% { border-color: #ff00ff; }
+          50% { border-color: #39ff14; }
+          75% { border-color: #ff0; }
+          100% { border-color: #0ff; }
+        }
+        .neon-border {
+          background-color: #0a0a0a;
+          border-color: #0ff;
+          animation: borderGradient 4s infinite linear;
+        }
+        .neon-border-img {
+          border-color: #ff00ff;
+          animation: borderGradient 4s infinite linear;
         }
       `}</style>
     </div>
