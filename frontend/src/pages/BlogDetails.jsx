@@ -71,7 +71,7 @@ const BlogDetails = () => {
   return (
     <div className="flex justify-center min-h-screen bg-darkBg px-4 pt-24">
       <motion.div
-        className="w-full max-w-3xl p-6 bg-darkBg rounded-2xl shadow-neon border-2 border-neonBlue"
+        className="w-full max-w-3xl p-6 bg-darkBg rounded-2xl shadow-neon animated-border"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
@@ -91,7 +91,7 @@ const BlogDetails = () => {
           <motion.img
             src={`https://ecell-blog-project.onrender.com/api/blogs/image/${blog.image}`}
             alt={blog.title}
-            className="w-full object-contain rounded-xl mb-4 border-2 border-neonBlue shadow-neon"
+            className="w-full object-contain rounded-xl mb-4 border-2 shadow-neon"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
@@ -183,8 +183,26 @@ const BlogDetails = () => {
           .shadow-neon {
             box-shadow: 0 0 10px #0ff, 0 0 20px #0ff, 0 0 30px #0ff;
           }
-          .border-neonBlue {
-            border-color: #0ff;
+          .animated-border {
+            border: 4px solid;
+            border-image-slice: 1;
+            border-width: 4px;
+            border-image-source: linear-gradient(
+              270deg,
+              #ff00ff,
+              #00ffff,
+              #39ff14,
+              #ffea00,
+              #ff00ff
+            );
+            animation: animatedBorder 4s linear infinite;
+          }
+          @keyframes animatedBorder {
+            0% { border-image-source: linear-gradient(270deg, #ff00ff, #00ffff, #39ff14, #ffea00, #ff00ff); }
+            25% { border-image-source: linear-gradient(270deg, #00ffff, #39ff14, #ffea00, #ff00ff, #00ffff); }
+            50% { border-image-source: linear-gradient(270deg, #39ff14, #ffea00, #ff00ff, #00ffff, #39ff14); }
+            75% { border-image-source: linear-gradient(270deg, #ffea00, #ff00ff, #00ffff, #39ff14, #ffea00); }
+            100% { border-image-source: linear-gradient(270deg, #ff00ff, #00ffff, #39ff14, #ffea00, #ff00ff); }
           }
         `}</style>
       </motion.div>
