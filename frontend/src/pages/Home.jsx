@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import API from "../utils/api";
 import { getToken, getUser } from "../utils/auth";
 import { Link, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import BlogCard from "../components/BlogCard";
 
 const Home = () => {
   const [blogs, setBlogs] = useState([]);
@@ -35,50 +37,54 @@ const Home = () => {
     }
   };
 
+  // Framer Motion variants for staggered list
+  const containerVariants = {
+    hidden: {},
+    visible: { transition: { staggerChildren: 0.1 } },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 },
+  };
+
   return (
-    <div className="container mx-auto p-4 space-y-6">
-      <h1 className="text-3xl font-bold mb-4">All Blogs</h1>
-      {blogs.map((blog) => (
-        <div key={blog._id} className="border p-4 rounded shadow-md">
-          {/* Display image if available */}
-          {blog.image && (
-            <img
-              src={`https://ecell-blog-project.onrender.com/api/blogs/image/${blog.image}`}
-              alt={blog.title}
-              className="w-full h-48 object-cover rounded mb-3"
-            />
-          )}
-          <h2 className="text-2xl font-semibold">{blog.title}</h2>
-          <p className="text-gray-700">by {blog.author.name}</p>
-          <p className="mt-2">{blog.content.slice(0, 200)}...</p>
-          <div className="mt-3 flex space-x-2">
-            <Link
-              to={`/blog/${blog._id}`}
-              className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
-            >
-              Read More
-            </Link>
-            {/* Show Edit and Delete if current user is author */}
+    <motion.div
+      className="min-h-screen bg-darkBg p-6"
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+    >
+      <h1 className="text-4xl font-bold text-neonBlue mb-6">All Blogs</h1>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {blogs.map((blog) => (
+          <motion.div key={blog._id} variants={itemVariants}>
+            <BlogCard blog={blog} />
+
+            {/* Action Buttons if current user is author */}
             {currentUser && blog.author._id === currentUser._id && (
-              <>
-                <button
+              <div className="mt-2 flex space-x-2">
+                <motion.button
                   onClick={() => navigate(`/blog/${blog._id}/edit`)}
-                  className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
+                  whileHover={{ scale: 1.05, boxShadow: "0 0 10px #39ff14" }}
+                  className="bg-neonGreen text-darkBg px-3 py-1 rounded shadow-neon transition-shadow duration-300"
                 >
                   Edit
-                </button>
-                <button
+                </motion.button>
+                <motion.button
                   onClick={() => handleDelete(blog._id)}
-                  className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+                  whileHover={{ scale: 1.05, boxShadow: "0 0 10px #ff00ff" }}
+                  className="bg-neonPink text-darkBg px-3 py-1 rounded shadow-neon transition-shadow duration-300"
                 >
                   Delete
-                </button>
-              </>
+                </motion.button>
+              </div>
             )}
-          </div>
-        </div>
-      ))}
-    </div>
+          </motion.div>
+        ))}
+      </div>
+    </motion.div>
   );
 };
 
