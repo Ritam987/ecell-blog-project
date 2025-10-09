@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import API from "../utils/api";
 import { useParams, useNavigate } from "react-router-dom";
+import API from "../utils/api";
 import { getUser, getToken } from "../utils/auth";
 import { motion } from "framer-motion";
 
@@ -63,118 +63,127 @@ const BlogDetails = () => {
     }
   };
 
-  // Variants for staggered comments
   const commentVariants = {
     hidden: { opacity: 0, y: 10 },
     visible: { opacity: 1, y: 0 },
   };
 
   return (
-    <motion.div
-      className="max-w-3xl mx-auto mt-10 p-6 bg-darkBg rounded-2xl shadow-neon min-h-screen"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-    >
-      <motion.h1
-        className="text-4xl font-bold text-neonBlue mb-2"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        {blog.title}
-      </motion.h1>
-      <p className="text-graySoft mb-4">by {blog.author?.name}</p>
-
-      {blog.image && (
-        <motion.img
-          src={`https://ecell-blog-project.onrender.com/api/blogs/image/${blog.image}`}
-          alt={blog.title}
-          className="w-full object-contain rounded-xl mb-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-        />
-      )}
-
-      <motion.p
-        className="mt-2 text-graySoft"
+    <div className="flex items-center justify-center min-h-screen bg-darkBg px-4">
+      <motion.div
+        className="w-full max-w-3xl p-6 bg-darkBg rounded-2xl shadow-neon"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.3 }}
+        transition={{ duration: 0.5 }}
       >
-        {blog.content}
-      </motion.p>
+        <motion.h1
+          className="text-4xl font-bold text-neonBlue mb-2 text-center"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          {blog.title}
+        </motion.h1>
+        <p className="text-graySoft mb-4 text-center">by {blog.author?.name}</p>
 
-      {/* Edit button */}
-      {currentUser && blog.author?._id === currentUser._id && (
-        <motion.div className="mt-4">
+        {blog.image && (
+          <motion.img
+            src={`https://ecell-blog-project.onrender.com/api/blogs/image/${blog.image}`}
+            alt={blog.title}
+            className="w-full object-contain rounded-xl mb-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+          />
+        )}
+
+        <motion.p
+          className="mt-2 text-graySoft"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+        >
+          {blog.content}
+        </motion.p>
+
+        {currentUser && blog.author?._id === currentUser._id && (
+          <motion.div className="mt-4 text-center">
+            <motion.button
+              onClick={() => navigate(`/blog/${blog._id}/edit`)}
+              whileHover={{ scale: 1.05, boxShadow: "0 0 10px #39ff14" }}
+              className="bg-neonGreen text-darkBg px-4 py-2 rounded shadow-neon transition-shadow duration-300"
+            >
+              Edit Blog
+            </motion.button>
+          </motion.div>
+        )}
+
+        <motion.div className="mt-4 flex items-center justify-center space-x-4">
           <motion.button
-            onClick={() => navigate(`/blog/${blog._id}/edit`)}
-            whileHover={{ scale: 1.05, boxShadow: "0 0 10px #39ff14" }}
-            className="bg-neonGreen text-darkBg px-4 py-2 rounded shadow-neon transition-shadow duration-300"
+            onClick={handleLike}
+            whileHover={{ scale: 1.05, boxShadow: "0 0 10px #ff00ff" }}
+            className={`px-3 py-1 rounded transition-shadow duration-300 ${
+              blog.likes?.includes(currentUser?._id)
+                ? "bg-neonPink text-darkBg shadow-neon"
+                : "bg-gray-700 text-white"
+            }`}
           >
-            Edit Blog
+            ❤️ {blog.likes?.length || 0} Like
           </motion.button>
         </motion.div>
-      )}
 
-      {/* Like button */}
-      <motion.div className="mt-4 flex items-center space-x-4">
-        <motion.button
-          onClick={handleLike}
-          whileHover={{ scale: 1.05, boxShadow: "0 0 10px #ff00ff" }}
-          className={`px-3 py-1 rounded transition-shadow duration-300 ${
-            blog.likes?.includes(currentUser?._id)
-              ? "bg-neonPink text-darkBg shadow-neon"
-              : "bg-gray-700 text-white"
-          }`}
-        >
-          ❤️ {blog.likes?.length || 0} Like
-        </motion.button>
+        <div className="mt-6">
+          <h2 className="text-2xl font-semibold text-neonBlue mb-2 text-center">
+            Comments
+          </h2>
+          <motion.div
+            className="space-y-2 mb-4"
+            initial="hidden"
+            animate="visible"
+          >
+            {comments.map((c) => (
+              <motion.div
+                key={c._id}
+                className="border p-2 rounded shadow-neon bg-cardBg"
+                variants={commentVariants}
+              >
+                <p className="font-semibold text-neonPink">
+                  {c.user?.name || c.authorName || "Deleted User"}
+                </p>
+                <p className="text-graySoft">{c.text}</p>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          {currentUser && (
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                placeholder="Add a comment"
+                className="flex-1 border p-2 rounded bg-darkBg text-white placeholder-gray-400"
+              />
+              <motion.button
+                onClick={handleComment}
+                whileHover={{ scale: 1.05, boxShadow: "0 0 10px #00ffff" }}
+                className="bg-neonBlue text-darkBg px-4 py-2 rounded shadow-neon transition-shadow duration-300"
+              >
+                Comment
+              </motion.button>
+            </div>
+          )}
+        </div>
+
+        {/* Neon glow animation */}
+        <style jsx>{`
+          .bg-darkBg { background-color: #0a0a0a; }
+          .text-darkBg { color: #0a0a0a; }
+          .shadow-neon {
+            box-shadow: 0 0 10px #0ff, 0 0 20px #0ff, 0 0 30px #0ff;
+          }
+        `}</style>
       </motion.div>
-
-      {/* Comments */}
-      <div className="mt-6">
-        <h2 className="text-2xl font-semibold text-neonBlue mb-2">Comments</h2>
-        <motion.div
-          className="space-y-2 mb-4"
-          initial="hidden"
-          animate="visible"
-        >
-          {comments.map((c) => (
-            <motion.div
-              key={c._id}
-              className="border p-2 rounded shadow-neon bg-cardBg"
-              variants={commentVariants}
-            >
-              <p className="font-semibold text-neonPink">
-                {c.user?.name || c.authorName || "Deleted User"}
-              </p>
-              <p className="text-graySoft">{c.text}</p>
-            </motion.div>
-          ))}
-        </motion.div>
-
-        {currentUser && (
-          <div className="flex space-x-2">
-            <input
-              type="text"
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-              placeholder="Add a comment"
-              className="flex-1 border p-2 rounded bg-darkBg text-white placeholder-gray-400"
-            />
-            <motion.button
-              onClick={handleComment}
-              whileHover={{ scale: 1.05, boxShadow: "0 0 10px #00ffff" }}
-              className="bg-neonBlue text-darkBg px-4 py-2 rounded shadow-neon transition-shadow duration-300"
-            >
-              Comment
-            </motion.button>
-          </div>
-        )}
-      </div>
-    </motion.div>
+    </div>
   );
 };
 
