@@ -69,14 +69,13 @@ const BlogDetails = () => {
   };
 
   return (
-    <div className="flex justify-center min-h-screen bg-darkBg px-4 pt-24">
+    <div className="flex justify-center min-h-screen bg-darkBg px-4 py-20">
       <motion.div
         className="w-full max-w-3xl p-6 bg-darkBg rounded-2xl shadow-neon animated-border"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
       >
-        {/* Blog Heading */}
         <motion.h1
           className="text-4xl font-bold text-neonBlue mb-2 text-center"
           initial={{ opacity: 0, y: 20 }}
@@ -86,19 +85,17 @@ const BlogDetails = () => {
         </motion.h1>
         <p className="text-graySoft mb-4 text-center">by {blog.author?.name}</p>
 
-        {/* Blog Image */}
         {blog.image && (
           <motion.img
             src={`https://ecell-blog-project.onrender.com/api/blogs/image/${blog.image}`}
             alt={blog.title}
-            className="w-full object-contain rounded-xl mb-4 border-2 shadow-neon"
+            className="w-full object-contain rounded-xl mb-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
           />
         )}
 
-        {/* Blog Content */}
         <motion.p
           className="mt-2 text-graySoft"
           initial={{ opacity: 0 }}
@@ -108,12 +105,11 @@ const BlogDetails = () => {
           {blog.content}
         </motion.p>
 
-        {/* Edit Button */}
         {currentUser && blog.author?._id === currentUser._id && (
           <motion.div className="mt-4 text-center">
             <motion.button
               onClick={() => navigate(`/blog/${blog._id}/edit`)}
-              whileHover={{ scale: 1.05, boxShadow: "0 0 15px #39ff14" }}
+              whileHover={{ scale: 1.05, boxShadow: "0 0 10px #39ff14" }}
               className="bg-neonGreen text-darkBg px-4 py-2 rounded shadow-neon transition-shadow duration-300"
             >
               Edit Blog
@@ -121,11 +117,10 @@ const BlogDetails = () => {
           </motion.div>
         )}
 
-        {/* Like Button */}
         <motion.div className="mt-4 flex items-center justify-center space-x-4">
           <motion.button
             onClick={handleLike}
-            whileHover={{ scale: 1.05, boxShadow: "0 0 15px #ff00ff" }}
+            whileHover={{ scale: 1.05, boxShadow: "0 0 10px #ff00ff" }}
             className={`px-3 py-1 rounded transition-shadow duration-300 ${
               blog.likes?.includes(currentUser?._id)
                 ? "bg-neonPink text-darkBg shadow-neon"
@@ -136,12 +131,15 @@ const BlogDetails = () => {
           </motion.button>
         </motion.div>
 
-        {/* Comments Section */}
         <div className="mt-6">
           <h2 className="text-2xl font-semibold text-neonBlue mb-2 text-center">
             Comments
           </h2>
-          <motion.div className="space-y-2 mb-4" initial="hidden" animate="visible">
+          <motion.div
+            className="space-y-2 mb-4"
+            initial="hidden"
+            animate="visible"
+          >
             {comments.map((c) => (
               <motion.div
                 key={c._id}
@@ -163,11 +161,11 @@ const BlogDetails = () => {
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
                 placeholder="Add a comment"
-                className="flex-1 border p-2 rounded bg-darkBg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-neonPink"
+                className="flex-1 border p-2 rounded bg-darkBg text-white placeholder-gray-400"
               />
               <motion.button
                 onClick={handleComment}
-                whileHover={{ scale: 1.05, boxShadow: "0 0 15px #00ffff" }}
+                whileHover={{ scale: 1.05, boxShadow: "0 0 10px #00ffff" }}
                 className="bg-neonBlue text-darkBg px-4 py-2 rounded shadow-neon transition-shadow duration-300"
               >
                 Comment
@@ -176,7 +174,7 @@ const BlogDetails = () => {
           )}
         </div>
 
-        {/* Neon glow animation */}
+        {/* Neon glow and animated border */}
         <style jsx>{`
           .bg-darkBg { background-color: #0a0a0a; }
           .text-darkBg { color: #0a0a0a; }
@@ -185,24 +183,18 @@ const BlogDetails = () => {
           }
           .animated-border {
             border: 4px solid;
+            border-radius: 1rem;
             border-image-slice: 1;
-            border-width: 4px;
-            border-image-source: linear-gradient(
-              270deg,
-              #ff00ff,
-              #00ffff,
-              #39ff14,
-              #ffea00,
-              #ff00ff
-            );
-            animation: animatedBorder 4s linear infinite;
+            border-image-source: linear-gradient(270deg, #ff00ff, #00ffff, #39ff14, #ff00ff);
+            animation: borderGradient 6s linear infinite;
           }
-          @keyframes animatedBorder {
-            0% { border-image-source: linear-gradient(270deg, #ff00ff, #00ffff, #39ff14, #ffea00, #ff00ff); }
-            25% { border-image-source: linear-gradient(270deg, #00ffff, #39ff14, #ffea00, #ff00ff, #00ffff); }
-            50% { border-image-source: linear-gradient(270deg, #39ff14, #ffea00, #ff00ff, #00ffff, #39ff14); }
-            75% { border-image-source: linear-gradient(270deg, #ffea00, #ff00ff, #00ffff, #39ff14, #ffea00); }
-            100% { border-image-source: linear-gradient(270deg, #ff00ff, #00ffff, #39ff14, #ffea00, #ff00ff); }
+          @keyframes borderGradient {
+            0% { border-image-source: linear-gradient(270deg, #ff00ff, #00ffff, #39ff14, #ff00ff); }
+            20% { border-image-source: linear-gradient(270deg, #00ffff, #39ff14, #ff00ff, #00ffff); }
+            40% { border-image-source: linear-gradient(270deg, #39ff14, #ff00ff, #00ffff, #39ff14); }
+            60% { border-image-source: linear-gradient(270deg, #ff00ff, #ffbf00, #00ffff, #ff00ff); }
+            80% { border-image-source: linear-gradient(270deg, #00ffff, #ff00ff, #39ff14, #00ffff); }
+            100% { border-image-source: linear-gradient(270deg, #ff00ff, #00ffff, #39ff14, #ff00ff); }
           }
         `}</style>
       </motion.div>
