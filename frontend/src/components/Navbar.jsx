@@ -18,20 +18,15 @@ export default function Navbar() {
     navigate("/login");
   };
 
-  // Framer Motion variants for link hover
   const linkVariants = {
     hover: { scale: 1.1, color: "#ff00ff", textShadow: "0 0 8px #ff00ff" },
   };
 
   return (
-    <nav className="bg-cardBg text-textLight p-4 shadow-neon fixed w-full z-50">
-      <div className="container mx-auto flex justify-between items-center">
-        <Link to="/" className="font-bold text-lg flex items-center gap-2">
-          <img
-            src="/logo.jpg" // Replace with your logo path
-            alt="Logo"
-            className="w-8 h-8 rounded-full"
-          />
+    <nav className="fixed top-0 left-0 w-full z-50 bg-darkBg bg-opacity-90 backdrop-blur-md border-b-4 border-neonBlue shadow-neon">
+      <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+        <Link to="/" className="font-bold text-2xl text-neonBlue animate-glow flex items-center gap-2">
+          <img src="/logo.jpg" alt="Logo" className="w-8 h-8 rounded-full" />
           E-CELL
         </Link>
 
@@ -68,6 +63,22 @@ export default function Navbar() {
           )}
         </div>
       </div>
+
+      <style jsx>{`
+        .bg-darkBg { background-color: #0a0a0a; }
+        .text-neonBlue { color: #0ff; }
+        .bg-neonPink { background-color: #ff00ff; }
+        .shadow-neon {
+          box-shadow: 0 0 10px #0ff, 0 0 20px #ff00ff, 0 0 30px #39ff14;
+        }
+        @keyframes neonGlow {
+          0%, 100% { text-shadow: 0 0 5px #0ff, 0 0 10px #0ff, 0 0 20px #0ff; }
+          50% { text-shadow: 0 0 20px #0ff, 0 0 30px #ff00ff, 0 0 40px #39ff14; }
+        }
+        .animate-glow {
+          animation: neonGlow 1.5s infinite alternate;
+        }
+      `}</style>
     </nav>
   );
 }
