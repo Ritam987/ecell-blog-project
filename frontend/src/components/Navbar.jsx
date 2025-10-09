@@ -23,8 +23,8 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="fixed top-0 left-0 w-full z-50 bg-darkBg bg-opacity-90 backdrop-blur-md border-b-4 border-neonBlue shadow-neon">
-      <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+    <nav className="fixed top-4 left-1/2 transform -translate-x-1/2 w-11/12 md:w-4/5 z-50 bg-darkBg bg-opacity-80 backdrop-blur-lg rounded-3xl border-2 border-neonBlue shadow-neon p-4">
+      <div className="flex justify-between items-center">
         <Link to="/" className="font-bold text-2xl text-neonBlue animate-glow flex items-center gap-2">
           <img src="/logo.jpg" alt="Logo" className="w-8 h-8 rounded-full" />
           E-CELL
@@ -46,7 +46,7 @@ export default function Navbar() {
               <motion.button
                 onClick={handleLogout}
                 whileHover={{ scale: 1.1, boxShadow: "0 0 10px #ff00ff" }}
-                className="bg-neonPink px-3 py-1 rounded shadow-neon transition-shadow duration-300"
+                className="bg-neonPink px-3 py-1 rounded-2xl shadow-neon transition-shadow duration-300"
               >
                 Logout
               </motion.button>
@@ -64,6 +64,7 @@ export default function Navbar() {
         </div>
       </div>
 
+      {/* Neon glow styles */}
       <style jsx>{`
         .bg-darkBg { background-color: #0a0a0a; }
         .text-neonBlue { color: #0ff; }
