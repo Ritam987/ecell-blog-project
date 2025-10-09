@@ -55,30 +55,30 @@ const AdminPanel = () => {
   };
 
   return (
-    <div className="container mx-auto p-4 space-y-8">
-      <h1 className="text-3xl font-bold">Admin Panel</h1>
+    <div className="container mx-auto p-4 space-y-8 bg-darkBg text-white min-h-screen">
+      <h1 className="text-4xl font-bold text-neonBlue mb-6">Admin Panel</h1>
 
       <section>
-        <h2 className="text-2xl font-semibold mb-2">Users</h2>
-        <table className="w-full border">
+        <h2 className="text-3xl font-semibold text-neonPink mb-4">Users</h2>
+        <table className="w-full border border-neonBlue">
           <thead>
-            <tr className="bg-gray-200">
-              <th className="p-2 border">Name</th>
-              <th className="p-2 border">Email</th>
-              <th className="p-2 border">Role</th>
-              <th className="p-2 border">Action</th>
+            <tr className="bg-darkBg border-b border-neonBlue">
+              <th className="p-2 border border-neonBlue">Name</th>
+              <th className="p-2 border border-neonBlue">Email</th>
+              <th className="p-2 border border-neonBlue">Role</th>
+              <th className="p-2 border border-neonBlue">Action</th>
             </tr>
           </thead>
           <tbody>
             {users.map(u => (
-              <tr key={u._id}>
-                <td className="p-2 border">{u.name}</td>
-                <td className="p-2 border">{u.email}</td>
-                <td className="p-2 border">{u.role}</td>
-                <td className="p-2 border">
+              <tr key={u._id} className="hover:bg-gray-900">
+                <td className="p-2 border border-neonBlue">{u.name}</td>
+                <td className="p-2 border border-neonBlue">{u.email}</td>
+                <td className="p-2 border border-neonBlue">{u.role}</td>
+                <td className="p-2 border border-neonBlue">
                   <button
                     onClick={() => handleDeleteUser(u._id)}
-                    className="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700"
+                    className="bg-neonRed text-darkBg px-2 py-1 rounded shadow-neon hover:shadow-neonHover transition-all duration-300"
                   >
                     Delete
                   </button>
@@ -90,31 +90,31 @@ const AdminPanel = () => {
       </section>
 
       <section>
-        <h2 className="text-2xl font-semibold mb-2">Blogs</h2>
-        <table className="w-full border">
+        <h2 className="text-3xl font-semibold text-neonGreen mb-4">Blogs</h2>
+        <table className="w-full border border-neonGreen">
           <thead>
-            <tr className="bg-gray-200">
-              <th className="p-2 border">Title</th>
-              <th className="p-2 border">Author</th>
-              <th className="p-2 border">Actions</th>
+            <tr className="bg-darkBg border-b border-neonGreen">
+              <th className="p-2 border border-neonGreen">Title</th>
+              <th className="p-2 border border-neonGreen">Author</th>
+              <th className="p-2 border border-neonGreen">Actions</th>
             </tr>
           </thead>
           <tbody>
             {blogs.map(b => (
-              <tr key={b._id}>
-                <td className="p-2 border">{b.title}</td>
-                <td className="p-2 border">{b.author.name}</td>
-                <td className="p-2 border flex space-x-2">
+              <tr key={b._id} className="hover:bg-gray-900">
+                <td className="p-2 border border-neonGreen">{b.title}</td>
+                <td className="p-2 border border-neonGreen">{b.author.name}</td>
+                <td className="p-2 border border-neonGreen flex space-x-2">
                   <Link
                     to={`/blog/${b._id}/edit`}
-                    className="bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700"
+                    className="bg-neonBlue text-darkBg px-2 py-1 rounded shadow-neon hover:shadow-neonHover transition-all duration-300"
                   >
                     Edit
                   </Link>
                   {(currentUser._id === b.author._id || currentUser.role === "admin") && (
                     <button
                       onClick={() => handleDeleteBlog(b._id, b.author._id)}
-                      className="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700"
+                      className="bg-neonRed text-darkBg px-2 py-1 rounded shadow-neon hover:shadow-neonHover transition-all duration-300"
                     >
                       Delete
                     </button>
