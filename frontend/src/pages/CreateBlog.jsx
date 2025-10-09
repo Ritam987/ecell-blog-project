@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import API from "../utils/api";
 import { getToken } from "../utils/auth";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 
 const CreateBlog = () => {
   const [title, setTitle] = useState("");
@@ -11,7 +12,6 @@ const CreateBlog = () => {
   const [preview, setPreview] = useState(null);
   const navigate = useNavigate();
 
-  // Handle image preview
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -25,12 +25,10 @@ const CreateBlog = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!title || !content) {
       alert("Title and Content are required!");
       return;
     }
-
     const formData = new FormData();
     formData.append("title", title);
     formData.append("content", content);
@@ -45,7 +43,7 @@ const CreateBlog = () => {
         },
       });
       alert("Blog created successfully!");
-      navigate("/"); // redirect to home
+      navigate("/");
     } catch (err) {
       console.error(err);
       alert(err.response?.data?.message || "Error creating blog");
@@ -53,22 +51,27 @@ const CreateBlog = () => {
   };
 
   return (
-    <div className="max-w-xl mx-auto mt-10 bg-white p-6 shadow-md rounded-md">
-      <h1 className="text-2xl font-bold mb-4">Create Blog</h1>
+    <motion.div
+      className="max-w-xl mx-auto mt-10 bg-darkBg p-6 rounded-lg shadow-neon"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+    >
+      <h1 className="text-2xl font-bold mb-4 text-neonBlue">Create Blog</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
           type="text"
           placeholder="Title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="w-full border p-2 rounded"
+          className="w-full border border-neonBlue bg-darkBg text-white p-2 rounded focus:outline-none focus:ring-2 focus:ring-neonBlue"
           required
         />
         <textarea
           placeholder="Content"
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          className="w-full border p-2 rounded h-40"
+          className="w-full border border-neonBlue bg-darkBg text-white p-2 rounded h-40 focus:outline-none focus:ring-2 focus:ring-neonBlue"
           required
         />
         <input
@@ -76,29 +79,31 @@ const CreateBlog = () => {
           placeholder="Tags (comma separated)"
           value={tags}
           onChange={(e) => setTags(e.target.value)}
-          className="w-full border p-2 rounded"
+          className="w-full border border-neonBlue bg-darkBg text-white p-2 rounded focus:outline-none focus:ring-2 focus:ring-neonBlue"
         />
         <input
           type="file"
           onChange={handleImageChange}
-          className="w-full"
+          className="w-full text-white"
           accept="image/*"
         />
         {preview && (
           <img
             src={preview}
             alt="Preview"
-            className="w-full h-64 object-cover rounded-md mt-2"
+            className="w-full h-64 object-cover rounded-md mt-2 border border-neonBlue"
           />
         )}
-        <button
+        <motion.button
           type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          className="bg-neonBlue text-darkBg px-4 py-2 rounded shadow-neon transition-all duration-300"
+          whileHover={{ scale: 1.05, boxShadow: "0 0 10px #39ff14" }}
+          whileTap={{ scale: 0.95 }}
         >
           Create
-        </button>
+        </motion.button>
       </form>
-    </div>
+    </motion.div>
   );
 };
 
