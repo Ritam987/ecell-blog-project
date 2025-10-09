@@ -1,5 +1,5 @@
-// src/components/Chatbot.jsx
 import React, { useState, useRef, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const ruleBasedQA = {
   "User Actions": [
@@ -38,77 +38,96 @@ const Chatbot = () => {
   };
 
   return (
-    <div className="fixed bottom-4 right-4 flex flex-col items-end">
+    <div className="fixed bottom-4 right-4 flex flex-col items-end z-50">
       {/* Toggle Button */}
-      <button
-        className="mb-2 bg-blue-500 text-white px-4 py-2 rounded shadow hover:bg-blue-600"
+      <motion.button
+        className="mb-2 bg-neonBlue text-darkBg px-4 py-2 rounded shadow-neon transition-all duration-300"
         onClick={() => setVisible(!visible)}
+        whileHover={{ scale: 1.05, boxShadow: "0 0 10px #39ff14" }}
+        whileTap={{ scale: 0.95 }}
       >
         {visible ? "Hide Chatbot" : "Show Chatbot"}
-      </button>
+      </motion.button>
 
       {/* Chatbox */}
-      {visible && (
-        <div className="w-80 max-w-full bg-white border shadow-lg rounded-lg flex flex-col">
-          <div className="bg-blue-500 text-white px-4 py-2 rounded-t-lg font-bold">
-            Chatbot
-          </div>
-          <div
-            className="flex-1 p-4 overflow-y-auto custom-scrollbar"
-            style={{ maxHeight: "300px" }}
+      <AnimatePresence>
+        {visible && (
+          <motion.div
+            className="w-80 max-w-full bg-darkBg border border-neonBlue shadow-neon rounded-lg flex flex-col overflow-hidden"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.3 }}
           >
-            {messages.map((msg, idx) => (
-              <div
-                key={idx}
-                className={`mb-2 p-2 rounded ${
-                  msg.type === "user" ? "bg-gray-200 text-right" : "bg-gray-100 text-left"
-                }`}
-              >
-                {msg.text}
-              </div>
-            ))}
-            <div ref={chatEndRef} />
-          </div>
+            {/* Header */}
+            <div className="bg-neonBlue text-darkBg px-4 py-2 font-bold rounded-t-lg">
+              Chatbot
+            </div>
 
-          {/* Categorized buttons */}
-          <div className="p-2 border-t flex flex-col gap-2">
-            {Object.entries(ruleBasedQA).map(([category, qas], idx) => (
-              <div key={idx}>
-                <div className="font-semibold mb-1">{category}</div>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {qas.map((qa, i) => (
-                    <button
-                      key={i}
-                      onClick={() => handleQuestionClick(qa)}
-                      className="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300"
-                    >
-                      {qa.question}
-                    </button>
-                  ))}
+            {/* Messages */}
+            <div
+              className="flex-1 p-4 overflow-y-auto custom-scrollbar space-y-2"
+              style={{ maxHeight: "300px" }}
+            >
+              {messages.map((msg, idx) => (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, x: msg.type === "user" ? 50 : -50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className={`p-2 rounded ${
+                    msg.type === "user"
+                      ? "bg-neonPink text-darkBg text-right self-end"
+                      : "bg-neonGreen text-darkBg text-left self-start"
+                  }`}
+                >
+                  {msg.text}
+                </motion.div>
+              ))}
+              <div ref={chatEndRef} />
+            </div>
+
+            {/* Categorized Buttons */}
+            <div className="p-2 border-t border-neonBlue flex flex-col gap-2">
+              {Object.entries(ruleBasedQA).map(([category, qas], idx) => (
+                <div key={idx}>
+                  <div className="font-semibold text-neonBlue mb-1">{category}</div>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {qas.map((qa, i) => (
+                      <motion.button
+                        key={i}
+                        onClick={() => handleQuestionClick(qa)}
+                        whileHover={{ scale: 1.05, boxShadow: "0 0 10px #ff00ff" }}
+                        className="bg-gray-700 text-white px-3 py-1 rounded shadow-neon transition-all duration-300"
+                      >
+                        {qa.question}
+                      </motion.button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
 
-          {/* Custom scrollbar */}
-          <style jsx>{`
-            .custom-scrollbar::-webkit-scrollbar {
-              width: 8px;
-            }
-            .custom-scrollbar::-webkit-scrollbar-track {
-              background: #f1f1f1;
-              border-radius: 4px;
-            }
-            .custom-scrollbar::-webkit-scrollbar-thumb {
-              background: #888;
-              border-radius: 4px;
-            }
-            .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-              background: #555;
-            }
-          `}</style>
-        </div>
-      )}
+            {/* Custom scrollbar */}
+            <style jsx>{`
+              .custom-scrollbar::-webkit-scrollbar {
+                width: 6px;
+              }
+              .custom-scrollbar::-webkit-scrollbar-track {
+                background: #1a1a1a;
+                border-radius: 4px;
+              }
+              .custom-scrollbar::-webkit-scrollbar-thumb {
+                background: #555;
+                border-radius: 4px;
+              }
+              .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                background: #888;
+              }
+            `}</style>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
