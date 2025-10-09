@@ -32,23 +32,23 @@ const BlogList = () => {
     fetchBlogs();
   }, []);
 
-  // Entrance animation variants for Framer Motion
+  // Card animation variants
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0 },
   };
 
   return (
-    <div className="max-w-4xl mx-auto mt-10 space-y-6 px-4">
+    <div className="max-w-5xl mx-auto mt-10 space-y-6 px-4">
       {blogs.map((blog, index) => (
         <motion.div
           key={blog._id}
-          className="p-6 rounded-2xl border-4 shadow-neon cursor-pointer neon-border"
+          className="p-6 rounded-2xl border-4 shadow-neon cursor-pointer neon-border bg-darkBg"
           variants={cardVariants}
           initial="hidden"
           animate="visible"
-          transition={{ delay: index * 0.1, duration: 0.5 }}
-          whileHover={{ scale: 1.03, boxShadow: "0 0 20px #0ff, 0 0 30px #ff00ff, 0 0 40px #39ff14" }}
+          transition={{ duration: 0.5, delay: index * 0.1 }}
+          whileHover={{ scale: 1.03, boxShadow: "0 0 20px #0ff, 0 0 40px #ff00ff, 0 0 60px #39ff14" }}
         >
           {blog.image && (
             <img
@@ -57,12 +57,21 @@ const BlogList = () => {
               className="w-full h-64 object-cover rounded mb-4 border-2 shadow-neon neon-border-img"
             />
           )}
-          <h2 className="text-2xl font-bold text-neonBlue mb-1">{blog.title}</h2>
+
+          <h2 className="text-2xl font-bold text-neonBlue mb-1 animate-textGlow">
+            {blog.title}
+          </h2>
+
           <p className="text-graySoft text-sm mb-2">
             By {blog.author.name} | {new Date(blog.createdAt).toLocaleDateString()}
           </p>
+
           <p className="text-white mb-2">{blog.content.slice(0, 200)}...</p>
-          <p className="text-neonPink mb-4">Tags: {blog.tags.join(", ")}</p>
+
+          <p className="text-neonPink mb-4 animate-textGlow">
+            Tags: {blog.tags.join(", ")}
+          </p>
+
           <div className="flex items-center gap-4">
             <button
               onClick={() => handleLike(blog._id)}
@@ -72,7 +81,7 @@ const BlogList = () => {
             </button>
             <Link
               to={`/blogs/${blog._id}`}
-              className="text-neonBlue hover:underline"
+              className="text-neonBlue hover:underline animate-textGlow"
             >
               Read more
             </Link>
@@ -98,23 +107,30 @@ const BlogList = () => {
         /* Continuous neon border animation */
         @keyframes borderGradient {
           0% { border-color: #0ff; }
-          12.5% { border-color: #ff00ff; }
-          25% { border-color: #39ff14; }
-          37.5% { border-color: #ff0; }
-          50% { border-color: #ff00ff; }
-          62.5% { border-color: #0ff; }
-          75% { border-color: #39ff14; }
-          87.5% { border-color: #ff0; }
+          20% { border-color: #ff00ff; }
+          40% { border-color: #39ff14; }
+          60% { border-color: #ff0; }
+          80% { border-color: #ff4500; }
           100% { border-color: #0ff; }
         }
+
         .neon-border {
-          background-color: #0a0a0a;
           border-color: #0ff;
           animation: borderGradient 6s infinite linear;
         }
+
         .neon-border-img {
           border-color: #ff00ff;
           animation: borderGradient 6s infinite linear;
+        }
+
+        /* Text glow animation */
+        @keyframes textGlow {
+          0%, 100% { text-shadow: 0 0 5px #0ff, 0 0 10px #ff00ff; }
+          50% { text-shadow: 0 0 15px #0ff, 0 0 30px #ff00ff, 0 0 45px #39ff14; }
+        }
+        .animate-textGlow {
+          animation: textGlow 2s infinite alternate;
         }
       `}</style>
     </div>
