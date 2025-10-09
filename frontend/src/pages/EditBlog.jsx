@@ -46,7 +46,6 @@ const EditBlog = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validation
     if (!title.trim() || !content.trim()) {
       alert("Title and Content cannot be empty");
       return;
@@ -73,22 +72,22 @@ const EditBlog = () => {
   };
 
   return (
-    <div className="max-w-xl mx-auto mt-10 bg-white p-6 shadow-md rounded-md">
-      <h1 className="text-2xl font-bold mb-4">Edit Blog</h1>
+    <div className="max-w-xl mx-auto mt-10 bg-darkBg p-6 rounded-lg shadow-neon border border-neonBlue">
+      <h1 className="text-2xl font-bold text-neonBlue mb-4">Edit Blog</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
           type="text"
           placeholder="Title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="w-full border p-2 rounded"
+          className="w-full border border-neonBlue p-2 rounded bg-darkBg text-white placeholder-gray-400"
           required
         />
         <textarea
           placeholder="Content"
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          className="w-full border p-2 rounded h-40"
+          className="w-full border border-neonBlue p-2 rounded h-40 bg-darkBg text-white placeholder-gray-400"
           required
         />
         <input
@@ -96,7 +95,7 @@ const EditBlog = () => {
           placeholder="Tags (comma separated)"
           value={tags}
           onChange={(e) => setTags(e.target.value)}
-          className="w-full border p-2 rounded"
+          className="w-full border border-neonBlue p-2 rounded bg-darkBg text-white placeholder-gray-400"
         />
 
         {/* Existing image */}
@@ -104,7 +103,7 @@ const EditBlog = () => {
           <img
             src={`${process.env.REACT_APP_API_URL?.replace('/api', '') || 'https://ecell-blog-project.onrender.com'}${currentImage}`}
             alt="Current"
-            className="w-full h-48 object-cover rounded mb-2"
+            className="w-full h-48 object-cover rounded mb-2 border-2 border-neonBlue shadow-neon"
           />
         )}
 
@@ -113,23 +112,56 @@ const EditBlog = () => {
           <img
             src={preview}
             alt="Preview"
-            className="w-full h-48 object-cover rounded mb-2"
+            className="w-full h-48 object-cover rounded mb-2 border-2 border-neonPink shadow-neon"
           />
         )}
 
-        <input
-          type="file"
-          onChange={handleImageChange}
-          className="w-full"
-        />
+        {/* Neon-style file chooser */}
+        <div>
+          <input
+            type="file"
+            id="fileInput"
+            onChange={handleImageChange}
+            className="hidden"
+            accept="image/*"
+          />
+          <label
+            htmlFor="fileInput"
+            className="inline-block bg-darkBg text-neonBlue px-4 py-2 rounded cursor-pointer
+                       hover:bg-neonBlue hover:text-darkBg transition-all duration-300 shadow-neon animate-glow"
+          >
+            {image ? "Change File" : "Choose File"}
+          </label>
+        </div>
 
         <button
           type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          className="bg-neonBlue text-darkBg px-4 py-2 rounded shadow-neon hover:shadow-neonHover transition-all duration-300"
         >
           Update
         </button>
       </form>
+
+      {/* Custom neon glow animation */}
+      <style jsx>{`
+        .shadow-neon {
+          box-shadow: 0 0 10px #39ff14, 0 0 20px #39ff14, 0 0 30px #39ff14;
+        }
+        .shadow-neonHover:hover {
+          box-shadow: 0 0 15px #39ff14, 0 0 25px #39ff14, 0 0 35px #39ff14;
+        }
+        .animate-glow {
+          animation: neonGlow 1.5s infinite alternate;
+        }
+        @keyframes neonGlow {
+          from {
+            box-shadow: 0 0 5px #39ff14, 0 0 10px #39ff14, 0 0 20px #39ff14;
+          }
+          to {
+            box-shadow: 0 0 15px #39ff14, 0 0 30px #39ff14, 0 0 45px #39ff14;
+          }
+        }
+      `}</style>
     </div>
   );
 };
