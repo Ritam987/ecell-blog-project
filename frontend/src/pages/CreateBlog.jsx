@@ -11,7 +11,6 @@ const CreateBlog = () => {
   const [preview, setPreview] = useState(null);
   const navigate = useNavigate();
 
-  // Handle image preview
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -45,7 +44,7 @@ const CreateBlog = () => {
         },
       });
       alert("Blog created successfully!");
-      navigate("/"); // redirect to home
+      navigate("/");
     } catch (err) {
       console.error(err);
       alert(err.response?.data?.message || "Error creating blog");
@@ -53,22 +52,22 @@ const CreateBlog = () => {
   };
 
   return (
-    <div className="max-w-xl mx-auto mt-10 bg-white p-6 shadow-md rounded-md">
-      <h1 className="text-2xl font-bold mb-4">Create Blog</h1>
+    <div className="max-w-xl mx-auto mt-10 p-6 rounded-md neon-bg shadow-neon border-neonBlue border-2">
+      <h1 className="text-2xl font-bold mb-4 text-neonBlue">Create Blog</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
           type="text"
           placeholder="Title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="w-full border p-2 rounded"
+          className="w-full border-2 border-neonBlue p-2 rounded bg-darkBg text-white focus:outline-none focus:border-neonPink"
           required
         />
         <textarea
           placeholder="Content"
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          className="w-full border p-2 rounded h-40"
+          className="w-full border-2 border-neonBlue p-2 rounded h-40 bg-darkBg text-white focus:outline-none focus:border-neonPink"
           required
         />
         <input
@@ -76,7 +75,7 @@ const CreateBlog = () => {
           placeholder="Tags (comma separated)"
           value={tags}
           onChange={(e) => setTags(e.target.value)}
-          className="w-full border p-2 rounded"
+          className="w-full border-2 border-neonBlue p-2 rounded bg-darkBg text-white focus:outline-none focus:border-neonPink"
         />
 
         {/* Neon-style file chooser */}
@@ -108,25 +107,31 @@ const CreateBlog = () => {
 
         <button
           type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          className="w-full bg-neonPink text-darkBg px-4 py-2 rounded font-semibold shadow-neon animate-neonGlow hover:scale-105 transition-all duration-300"
         >
           Create
         </button>
       </form>
 
-      {/* Custom neon glow animation */}
+      {/* Neon glow animations */}
       <style jsx>{`
+        .darkBg { background-color: #0a0a0a; }
+        .bg-darkBg { background-color: #0a0a0a; }
+        .text-darkBg { color: #0a0a0a; }
+        .bg-neonBlue { background-color: #0ff; }
+        .border-neonBlue { border-color: #0ff; }
+        .bg-neonPink { background-color: #ff00ff; }
+        .text-neonBlue { color: #0ff; }
+        .text-neonPink { color: #ff00ff; }
+        .shadow-neon { box-shadow: 0 0 10px #0ff, 0 0 20px #0ff; }
         @keyframes neonGlow {
-          0%, 100% { box-shadow: 0 0 5px #39ff14, 0 0 10px #39ff14, 0 0 20px #39ff14; }
-          50% { box-shadow: 0 0 20px #39ff14, 0 0 30px #39ff14, 0 0 40px #39ff14; }
+          0%, 100% { box-shadow: 0 0 5px #0ff, 0 0 10px #0ff, 0 0 20px #0ff; }
+          50% { box-shadow: 0 0 20px #0ff, 0 0 30px #0ff, 0 0 40px #0ff; }
         }
         .animate-neonGlow {
           animation: neonGlow 1.5s infinite alternate;
         }
-        .bg-neonBlue { background-color: #0ff; }
-        .text-darkBg { color: #0a0a0a; }
-        .shadow-neon { box-shadow: 0 0 10px #0ff, 0 0 20px #0ff; }
-        .border-neonBlue { border-color: #0ff; }
+        .neon-bg { background-color: #0a0a0a; }
       `}</style>
     </div>
   );
