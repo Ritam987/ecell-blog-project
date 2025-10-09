@@ -23,7 +23,7 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="fixed top-0 left-0 w-full z-50 bg-darkBg bg-opacity-90 backdrop-blur-md border-b-2 border-neonBlue shadow-neon py-3 px-6 flex justify-between items-center">
+    <nav className="fixed top-0 left-0 w-full z-50 bg-darkBg bg-opacity-90 backdrop-blur-md border-b-2 border-neonBlue shadow-neon py-4 px-8 flex justify-between items-center">
       {/* Logo */}
       <Link to="/" className="font-bold text-2xl text-neonBlue animate-glow flex items-center gap-2">
         <img src="/logo.jpg" alt="Logo" className="w-8 h-8 rounded-full" />
@@ -64,7 +64,6 @@ export default function Navbar() {
         )}
       </div>
 
-      {/* Neon glow styles */}
       <style jsx>{`
         .bg-darkBg { background-color: #0a0a0a; }
         .text-neonBlue { color: #0ff; }
