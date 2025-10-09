@@ -6,11 +6,43 @@
 /* Global Custom Styles */
 body {
   font-family: 'Inter', sans-serif;
-  background-color: #f7fafc;
-  margin: 0;
-  padding: 0;
-  @apply bg-gray-50 text-gray-800;
+  @apply bg-darkBg text-textLight m-0 p-0;
 }
 
-a { text-decoration: none; }
-button { cursor: pointer; }
+a {
+  text-decoration: none;
+  @apply transition-colors duration-300 hover:text-neonPink;
+}
+
+button {
+  cursor: pointer;
+  @apply px-4 py-2 rounded-lg font-semibold bg-neonBlue text-darkBg shadow-neon transition-shadow duration-300;
+}
+
+/* Card Base Style */
+.card {
+  @apply bg-cardBg rounded-2xl shadow-neon p-4 transition-shadow duration-300;
+}
+
+/* Inputs / Form Fields */
+input, textarea {
+  @apply bg-cardBg text-textLight border border-gray-700 rounded-lg p-2 w-full focus:outline-none focus:ring-2 focus:ring-neonBlue transition;
+}
+
+/* Subtle Neon Hover on Buttons */
+button:hover {
+  @apply shadow-neonHover;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-cardBg;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-neonBlue rounded-lg;
+}
