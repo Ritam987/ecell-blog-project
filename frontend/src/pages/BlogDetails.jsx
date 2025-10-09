@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import API from "../utils/api";
 import { useParams, useNavigate } from "react-router-dom";
 import { getUser, getToken } from "../utils/auth";
+import { motion } from "framer-motion";
 
 const BlogDetails = () => {
   const { id } = useParams();
@@ -62,60 +63,97 @@ const BlogDetails = () => {
     }
   };
 
-  return (
-    <div className="max-w-3xl mx-auto mt-10 p-6 bg-white shadow-md rounded-md">
-      <h1 className="text-3xl font-bold">{blog.title}</h1>
-      <p className="text-gray-600 mb-4">by {blog.author?.name}</p>
+  // Variants for staggered comments
+  const commentVariants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: { opacity: 1, y: 0 },
+  };
 
-      {/* Display Image if exists */}
+  return (
+    <motion.div
+      className="max-w-3xl mx-auto mt-10 p-6 bg-darkBg rounded-2xl shadow-neon min-h-screen"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      <motion.h1
+        className="text-4xl font-bold text-neonBlue mb-2"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        {blog.title}
+      </motion.h1>
+      <p className="text-graySoft mb-4">by {blog.author?.name}</p>
+
       {blog.image && (
-        <img
+        <motion.img
           src={`https://ecell-blog-project.onrender.com/api/blogs/image/${blog.image}`}
           alt={blog.title}
-          className="w-full object-contain rounded mb-3"
+          className="w-full object-contain rounded-xl mb-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
         />
       )}
 
-      <p className="mt-2">{blog.content}</p>
+      <motion.p
+        className="mt-2 text-graySoft"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.3 }}
+      >
+        {blog.content}
+      </motion.p>
 
-      {/* Edit button visible only for author */}
+      {/* Edit button */}
       {currentUser && blog.author?._id === currentUser._id && (
-        <div className="mt-4">
-          <button
+        <motion.div className="mt-4">
+          <motion.button
             onClick={() => navigate(`/blog/${blog._id}/edit`)}
-            className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600"
+            whileHover={{ scale: 1.05, boxShadow: "0 0 10px #39ff14" }}
+            className="bg-neonGreen text-darkBg px-4 py-2 rounded shadow-neon transition-shadow duration-300"
           >
             Edit Blog
-          </button>
-        </div>
+          </motion.button>
+        </motion.div>
       )}
 
-      <div className="mt-4 flex items-center space-x-4">
-        <button
+      {/* Like button */}
+      <motion.div className="mt-4 flex items-center space-x-4">
+        <motion.button
           onClick={handleLike}
-          className={`px-3 py-1 rounded ${
+          whileHover={{ scale: 1.05, boxShadow: "0 0 10px #ff00ff" }}
+          className={`px-3 py-1 rounded transition-shadow duration-300 ${
             blog.likes?.includes(currentUser?._id)
-              ? "bg-red-600 text-white"
-              : "bg-gray-200"
+              ? "bg-neonPink text-darkBg shadow-neon"
+              : "bg-gray-700 text-white"
           }`}
         >
           ❤️ {blog.likes?.length || 0} Like
-        </button>
-      </div>
+        </motion.button>
+      </motion.div>
 
+      {/* Comments */}
       <div className="mt-6">
-        <h2 className="text-xl font-semibold mb-2">Comments</h2>
-        <div className="space-y-2 mb-4">
+        <h2 className="text-2xl font-semibold text-neonBlue mb-2">Comments</h2>
+        <motion.div
+          className="space-y-2 mb-4"
+          initial="hidden"
+          animate="visible"
+        >
           {comments.map((c) => (
-            <div key={c._id} className="border p-2 rounded">
-              {/* Show authorName if user is deleted */}
-              <p className="font-semibold">
+            <motion.div
+              key={c._id}
+              className="border p-2 rounded shadow-neon bg-cardBg"
+              variants={commentVariants}
+            >
+              <p className="font-semibold text-neonPink">
                 {c.user?.name || c.authorName || "Deleted User"}
               </p>
-              <p>{c.text}</p>
-            </div>
+              <p className="text-graySoft">{c.text}</p>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
 
         {currentUser && (
           <div className="flex space-x-2">
@@ -124,18 +162,19 @@ const BlogDetails = () => {
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
               placeholder="Add a comment"
-              className="flex-1 border p-2 rounded"
+              className="flex-1 border p-2 rounded bg-darkBg text-white placeholder-gray-400"
             />
-            <button
+            <motion.button
               onClick={handleComment}
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              whileHover={{ scale: 1.05, boxShadow: "0 0 10px #00ffff" }}
+              className="bg-neonBlue text-darkBg px-4 py-2 rounded shadow-neon transition-shadow duration-300"
             >
               Comment
-            </button>
+            </motion.button>
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 };
 
