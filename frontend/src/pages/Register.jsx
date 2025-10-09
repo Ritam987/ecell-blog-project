@@ -36,7 +36,8 @@ export default function Register() {
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full border border-neonPink bg-darkBg px-3 py-2 rounded text-white focus:outline-none focus:ring-2 focus:ring-neonPink"
+            className="w-full bg-darkBg border border-neonPink px-3 py-2 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-neonPink"
+            placeholder="Enter your name"
             required
           />
         </div>
@@ -46,7 +47,8 @@ export default function Register() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full border border-neonGreen bg-darkBg px-3 py-2 rounded text-white focus:outline-none focus:ring-2 focus:ring-neonGreen"
+            className="w-full bg-darkBg border border-neonGreen px-3 py-2 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-neonGreen"
+            placeholder="Enter your email"
             required
           />
         </div>
@@ -56,7 +58,8 @@ export default function Register() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full border border-neonBlue bg-darkBg px-3 py-2 rounded text-white focus:outline-none focus:ring-2 focus:ring-neonBlue"
+            className="w-full bg-darkBg border border-neonBlue px-3 py-2 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-neonBlue"
+            placeholder="Enter your password"
             required
           />
         </div>
