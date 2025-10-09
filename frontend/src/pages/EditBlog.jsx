@@ -67,7 +67,7 @@ const EditBlog = () => {
   return (
     <div className="flex items-center justify-center min-h-screen bg-darkBg px-4">
       <div className="w-full max-w-xl p-6 rounded-lg neon-bg shadow-neon border border-neonBlue">
-        <h1 className="text-2xl font-bold text-neonBlue mb-4">Edit Blog</h1>
+        <h1 className="text-2xl font-bold text-neonBlue mb-6 text-center">Edit Blog</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
             type="text"
@@ -108,7 +108,7 @@ const EditBlog = () => {
             />
           )}
 
-          <div>
+          <div className="flex justify-center">
             <input
               type="file"
               id="fileInput"
@@ -133,7 +133,6 @@ const EditBlog = () => {
           </button>
         </form>
 
-        {/* Neon glow animation */}
         <style jsx>{`
           .neon-bg { background-color: #0a0a0a; }
           .shadow-neon {
