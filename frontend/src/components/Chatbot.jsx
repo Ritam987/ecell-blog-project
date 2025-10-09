@@ -1,3 +1,4 @@
+// src/components/Chatbot.jsx
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -41,7 +42,7 @@ const Chatbot = () => {
     <div className="fixed bottom-4 right-4 flex flex-col items-end z-50">
       {/* Toggle Button */}
       <motion.button
-        className="mb-2 bg-neonBlue text-darkBg px-4 py-2 rounded shadow-neon transition-all duration-300"
+        className="mb-2 bg-neonBlue text-white px-4 py-2 rounded shadow-neon transition-all duration-300"
         onClick={() => setVisible(!visible)}
         whileHover={{ scale: 1.05, boxShadow: "0 0 10px #39ff14" }}
         whileTap={{ scale: 0.95 }}
@@ -60,7 +61,7 @@ const Chatbot = () => {
             transition={{ duration: 0.3 }}
           >
             {/* Header */}
-            <div className="bg-neonBlue text-darkBg px-4 py-2 font-bold rounded-t-lg">
+            <div className="bg-neonBlue text-white px-4 py-2 font-bold rounded-t-lg">
               Chatbot
             </div>
 
@@ -77,8 +78,8 @@ const Chatbot = () => {
                   transition={{ duration: 0.3 }}
                   className={`p-2 rounded ${
                     msg.type === "user"
-                      ? "bg-neonPink text-darkBg text-right self-end"
-                      : "bg-neonGreen text-darkBg text-left self-start"
+                      ? "bg-neonPink text-white text-right self-end"
+                      : "bg-neonGreen text-black text-left self-start"
                   }`}
                 >
                   {msg.text}
@@ -91,7 +92,7 @@ const Chatbot = () => {
             <div className="p-2 border-t border-neonBlue flex flex-col gap-2">
               {Object.entries(ruleBasedQA).map(([category, qas], idx) => (
                 <div key={idx}>
-                  <div className="font-semibold text-neonBlue mb-1">{category}</div>
+                  <div className="font-semibold text-white mb-1">{category}</div>
                   <div className="flex flex-wrap gap-2 mb-2">
                     {qas.map((qa, i) => (
                       <motion.button
