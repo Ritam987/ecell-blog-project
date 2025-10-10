@@ -61,6 +61,19 @@ const BlogDetails = () => {
     }
   };
 
+  const handleFollow = async () => {
+    try {
+      const res = await API.post(
+        `/blogs/${id}/follow`,
+        {},
+        { headers: { Authorization: `Bearer ${getToken()}` } }
+      );
+      setBlog(res.data);
+    } catch (err) {
+      alert(err.response?.data?.message || "Error following/unfollowing author");
+    }
+  };
+
   const handleComment = async () => {
     if (!commentText) return;
     try {
@@ -96,7 +109,25 @@ const BlogDetails = () => {
         >
           {blog.title}
         </motion.h1>
-        <p className="text-graySoft mb-4 text-center">by {blog.author?.name}</p>
+        <p className="text-graySoft mb-2 text-center">by {blog.author?.name}</p>
+
+        {/* Follow button */}
+        {currentUser && blog.author?._id !== currentUser._id && (
+          <motion.div className="flex justify-center mb-4">
+            <motion.button
+              onClick={handleFollow}
+              whileHover={{ scale: 1.05, boxShadow: "0 0 10px #ffbf00" }}
+              className={`px-4 py-2 rounded transition-shadow duration-300 ${
+                blog.followers?.includes(currentUser._id)
+                  ? "bg-neonYellow text-darkBg shadow-neon"
+                  : "bg-gray-700 text-white"
+              }`}
+            >
+              {blog.followers?.includes(currentUser._id) ? "Unfollow" : "Follow"} (
+              {blog.followers?.length || 0})
+            </motion.button>
+          </motion.div>
+        )}
 
         {blog.image && (
           <motion.img
@@ -130,7 +161,7 @@ const BlogDetails = () => {
           </motion.div>
         )}
 
-        {/* Like & Dislike Buttons */}
+        {/* Like & Dislike buttons */}
         <motion.div className="mt-4 flex items-center justify-center space-x-4">
           <motion.button
             onClick={handleLike}
@@ -146,10 +177,10 @@ const BlogDetails = () => {
 
           <motion.button
             onClick={handleDislike}
-            whileHover={{ scale: 1.05, boxShadow: "0 0 10px #00ff00" }}
+            whileHover={{ scale: 1.05, boxShadow: "0 0 10px #ff0000" }}
             className={`px-3 py-1 rounded transition-shadow duration-300 ${
               blog.dislikes?.includes(currentUser?._id)
-                ? "bg-neonRed text-darkBg shadow-neon"
+                ? "bg-red-600 text-white shadow-neon"
                 : "bg-gray-700 text-white"
             }`}
           >
@@ -157,15 +188,12 @@ const BlogDetails = () => {
           </motion.button>
         </motion.div>
 
+        {/* Comments */}
         <div className="mt-6">
           <h2 className="text-2xl font-semibold text-neonBlue mb-2 text-center">
             Comments
           </h2>
-          <motion.div
-            className="space-y-2 mb-4"
-            initial="hidden"
-            animate="visible"
-          >
+          <motion.div className="space-y-2 mb-4" initial="hidden" animate="visible">
             {comments.map((c) => (
               <motion.div
                 key={c._id}
@@ -202,8 +230,12 @@ const BlogDetails = () => {
 
         {/* Neon glow and animated border */}
         <style jsx>{`
-          .bg-darkBg { background-color: #0a0a0a; }
-          .text-darkBg { color: #0a0a0a; }
+          .bg-darkBg {
+            background-color: #0a0a0a;
+          }
+          .text-darkBg {
+            color: #0a0a0a;
+          }
           .shadow-neon {
             box-shadow: 0 0 10px #0ff, 0 0 20px #0ff, 0 0 30px #0ff;
           }
@@ -211,16 +243,34 @@ const BlogDetails = () => {
             border: 4px solid;
             border-radius: 1rem;
             border-image-slice: 1;
-            border-image-source: linear-gradient(270deg, #ff00ff, #00ffff, #39ff14, #ff00ff);
+            border-image-source: linear-gradient(
+              270deg,
+              #ff00ff,
+              #00ffff,
+              #39ff14,
+              #ff00ff
+            );
             animation: borderGradient 6s linear infinite;
           }
           @keyframes borderGradient {
-            0% { border-image-source: linear-gradient(270deg, #ff00ff, #00ffff, #39ff14, #ff00ff); }
-            20% { border-image-source: linear-gradient(270deg, #00ffff, #39ff14, #ff00ff, #00ffff); }
-            40% { border-image-source: linear-gradient(270deg, #39ff14, #ff00ff, #00ffff, #39ff14); }
-            60% { border-image-source: linear-gradient(270deg, #ff00ff, #ffbf00, #00ffff, #ff00ff); }
-            80% { border-image-source: linear-gradient(270deg, #00ffff, #ff00ff, #39ff14, #00ffff); }
-            100% { border-image-source: linear-gradient(270deg, #ff00ff, #00ffff, #39ff14, #ff00ff); }
+            0% {
+              border-image-source: linear-gradient(270deg, #ff00ff, #00ffff, #39ff14, #ff00ff);
+            }
+            20% {
+              border-image-source: linear-gradient(270deg, #00ffff, #39ff14, #ff00ff, #00ffff);
+            }
+            40% {
+              border-image-source: linear-gradient(270deg, #39ff14, #ff00ff, #00ffff, #39ff14);
+            }
+            60% {
+              border-image-source: linear-gradient(270deg, #ff00ff, #ffbf00, #00ffff, #ff00ff);
+            }
+            80% {
+              border-image-source: linear-gradient(270deg, #00ffff, #ff00ff, #39ff14, #00ffff);
+            }
+            100% {
+              border-image-source: linear-gradient(270deg, #ff00ff, #00ffff, #39ff14, #ff00ff);
+            }
           }
         `}</style>
       </motion.div>
