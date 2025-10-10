@@ -7,13 +7,14 @@ const blogSchema = new mongoose.Schema(
     author: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     tags: [String],
     image: { type: mongoose.Schema.Types.ObjectId, ref: "blogImages" }, // store GridFS file ID
-    likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-    dislikes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    likesCount: { type: Number, default: 0 },
+    dislikesCount: { type: Number, default: 0 },
 
   },
   { timestamps: true }
 );
 
 module.exports = mongoose.model("Blog", blogSchema);
+
 
 
