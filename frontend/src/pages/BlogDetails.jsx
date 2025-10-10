@@ -35,16 +35,22 @@ const BlogDetails = () => {
     fetchComments();
   }, [id]);
 
+  // ---------------- Like & Dislike Handlers ---------------- //
   const handleLike = async () => {
     try {
-      const res = await API.post(
-        `/blogs/${id}/like`,
-        {},
-        { headers: { Authorization: `Bearer ${getToken()}` } }
-      );
-      setBlog(res.data);
+      const res = await API.post(`/blogs/${id}/like`, { action: "like" });
+      setBlog(prev => ({ ...prev, likesCount: res.data.likes }));
     } catch (err) {
-      alert(err.response?.data?.message || "Error liking blog");
+      console.error("Error liking blog:", err);
+    }
+  };
+
+  const handleDislike = async () => {
+    try {
+      const res = await API.post(`/blogs/${id}/dislike`, { action: "dislike" });
+      setBlog(prev => ({ ...prev, dislikesCount: res.data.dislikes }));
+    } catch (err) {
+      console.error("Error disliking blog:", err);
     }
   };
 
@@ -117,29 +123,31 @@ const BlogDetails = () => {
           </motion.div>
         )}
 
+        {/* ---------------- Like & Dislike Buttons ---------------- */}
         <motion.div className="mt-4 flex items-center justify-center space-x-4">
           <motion.button
             onClick={handleLike}
             whileHover={{ scale: 1.05, boxShadow: "0 0 10px #ff00ff" }}
-            className={`px-3 py-1 rounded transition-shadow duration-300 ${
-              blog.likes?.includes(currentUser?._id)
-                ? "bg-neonPink text-darkBg shadow-neon"
-                : "bg-gray-700 text-white"
-            }`}
+            className="px-3 py-1 rounded bg-neonPink text-darkBg shadow-neon transition-shadow duration-300"
           >
-            ❤️ {blog.likes?.length || 0} Like
+            ❤️ {blog.likesCount || 0} Like
+          </motion.button>
+
+          <motion.button
+            onClick={handleDislike}
+            whileHover={{ scale: 1.05, boxShadow: "0 0 10px #00ffff" }}
+            className="px-3 py-1 rounded bg-neonPurple text-darkBg shadow-neon transition-shadow duration-300"
+          >
+            👎 {blog.dislikesCount || 0} Dislike
           </motion.button>
         </motion.div>
 
+        {/* ---------------- Comments ---------------- */}
         <div className="mt-6">
           <h2 className="text-2xl font-semibold text-neonBlue mb-2 text-center">
             Comments
           </h2>
-          <motion.div
-            className="space-y-2 mb-4"
-            initial="hidden"
-            animate="visible"
-          >
+          <motion.div className="space-y-2 mb-4" initial="hidden" animate="visible">
             {comments.map((c) => (
               <motion.div
                 key={c._id}
