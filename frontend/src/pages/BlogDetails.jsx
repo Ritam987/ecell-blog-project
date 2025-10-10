@@ -8,25 +8,24 @@ const BlogDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const currentUser = getUser();
+
   const [blog, setBlog] = useState({});
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState("");
   const [followersCount, setFollowersCount] = useState(0);
   const [isFollowing, setIsFollowing] = useState(false);
 
-  // Fetch blog details
+  // Fetch single blog
   const fetchBlog = async () => {
     try {
       const res = await API.get(`/blogs/${id}`);
       setBlog(res.data);
 
-      // Initialize followers
-      if (res.data.author?.followers) {
-        setFollowersCount(res.data.author.followers.length);
+      // Initialize followersCount and isFollowing if author exists
+      if (res.data.author) {
+        setFollowersCount(res.data.author.followers?.length || 0);
         setIsFollowing(
-          currentUser
-            ? res.data.author.followers.includes(currentUser._id)
-            : false
+          res.data.author.followers?.includes(currentUser?._id) || false
         );
       }
     } catch (err) {
@@ -77,7 +76,23 @@ const BlogDetails = () => {
     }
   };
 
-  // Follow/Unfollow author
+  // Comment blog
+  const handleComment = async () => {
+    if (!commentText) return;
+    try {
+      await API.post(
+        `/blogs/${id}/comment`,
+        { text: commentText },
+        { headers: { Authorization: `Bearer ${getToken()}` } }
+      );
+      setCommentText("");
+      fetchComments();
+    } catch (err) {
+      alert(err.response?.data?.message || "Error posting comment");
+    }
+  };
+
+  // Follow / Unfollow author
   const handleFollow = async () => {
     try {
       const res = await API.post(
@@ -92,31 +107,19 @@ const BlogDetails = () => {
     }
   };
 
-  // Share blog (copy link and increase count)
+  // Share blog (copies link to clipboard and increments share count)
   const handleShare = async () => {
     try {
-      await navigator.clipboard.writeText(window.location.href);
-      alert("Link copied to clipboard!");
-      await API.post(`/blogs/${id}/share`);
-      setBlog(prev => ({ ...prev, shares: (prev.shares || 0) + 1 }));
-    } catch (err) {
-      alert("Error sharing blog");
-    }
-  };
+      // Copy link to clipboard
+      const blogLink = window.location.href;
+      await navigator.clipboard.writeText(blogLink);
 
-  // Add comment
-  const handleComment = async () => {
-    if (!commentText) return;
-    try {
-      await API.post(
-        `/blogs/${id}/comment`,
-        { text: commentText },
-        { headers: { Authorization: `Bearer ${getToken()}` } }
-      );
-      setCommentText("");
-      fetchComments();
+      // Call backend to increment share count
+      const res = await API.post(`/blogs/${id}/share`);
+      setBlog(res.data); // updated share count
+      alert("Link copied to clipboard!");
     } catch (err) {
-      alert(err.response?.data?.message || "Error posting comment");
+      alert(err.response?.data?.message || "Error sharing blog");
     }
   };
 
@@ -133,7 +136,7 @@ const BlogDetails = () => {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
       >
-        {/* Blog Title */}
+        {/* Blog title */}
         <motion.h1
           className="text-4xl font-bold text-neonBlue mb-2 text-center"
           initial={{ opacity: 0, y: 20 }}
@@ -142,23 +145,27 @@ const BlogDetails = () => {
           {blog.title}
         </motion.h1>
 
-        {/* Author & Follow */}
-        <div className="text-center mb-4 flex justify-center items-center space-x-2">
-          <p className="text-graySoft">by {blog.author?.name}</p>
-          {currentUser && blog.author?._id !== currentUser._id && (
-            <motion.button
-              onClick={handleFollow}
-              whileHover={{ scale: 1.05, boxShadow: "0 0 10px #39ff14" }}
-              className={`px-3 py-1 rounded transition-shadow duration-300 ${
-                isFollowing ? "bg-neonGreen text-darkBg shadow-neon" : "bg-gray-700 text-white"
-              }`}
-            >
-              {isFollowing ? `Following (${followersCount})` : `Follow (${followersCount})`}
-            </motion.button>
-          )}
-        </div>
+        {/* Author and follow button */}
+        {blog.author && (
+          <div className="flex justify-center items-center gap-4 mb-4">
+            <p className="text-graySoft">by {blog.author.name}</p>
+            {currentUser && blog.author._id !== currentUser._id && (
+              <motion.button
+                onClick={handleFollow}
+                whileHover={{ scale: 1.05, boxShadow: "0 0 10px #39ff14" }}
+                className={`px-3 py-1 rounded shadow-neon transition-shadow duration-300 ${
+                  isFollowing
+                    ? "bg-neonGreen text-darkBg"
+                    : "bg-gray-700 text-white"
+                }`}
+              >
+                {isFollowing ? `Following (${followersCount})` : `Follow (${followersCount})`}
+              </motion.button>
+            )}
+          </div>
+        )}
 
-        {/* Blog Image */}
+        {/* Blog image */}
         {blog.image && (
           <motion.img
             src={`https://ecell-blog-project.onrender.com/api/blogs/image/${blog.image}`}
@@ -170,7 +177,7 @@ const BlogDetails = () => {
           />
         )}
 
-        {/* Blog Content */}
+        {/* Blog content */}
         <motion.p
           className="mt-2 text-graySoft"
           initial={{ opacity: 0 }}
@@ -180,7 +187,7 @@ const BlogDetails = () => {
           {blog.content}
         </motion.p>
 
-        {/* Edit Button */}
+        {/* Edit blog button */}
         {currentUser && blog.author?._id === currentUser._id && (
           <motion.div className="mt-4 text-center">
             <motion.button
@@ -193,7 +200,7 @@ const BlogDetails = () => {
           </motion.div>
         )}
 
-        {/* Like / Dislike / Share Buttons */}
+        {/* Like / Dislike / Share buttons */}
         <motion.div className="mt-4 flex items-center justify-center space-x-4">
           <motion.button
             onClick={handleLike}
@@ -212,7 +219,7 @@ const BlogDetails = () => {
             whileHover={{ scale: 1.05, boxShadow: "0 0 10px #ff0000" }}
             className={`px-3 py-1 rounded transition-shadow duration-300 ${
               blog.dislikes?.includes(currentUser?._id)
-                ? "bg-red-600 text-white shadow-neon"
+                ? "bg-red-500 text-darkBg shadow-neon"
                 : "bg-gray-700 text-white"
             }`}
           >
@@ -222,7 +229,7 @@ const BlogDetails = () => {
           <motion.button
             onClick={handleShare}
             whileHover={{ scale: 1.05, boxShadow: "0 0 10px #00ffff" }}
-            className="px-3 py-1 rounded bg-neonBlue text-darkBg shadow-neon"
+            className="px-3 py-1 rounded bg-neonBlue text-darkBg shadow-neon transition-shadow duration-300"
           >
             🔗 Share {blog.shares || 0}
           </motion.button>
@@ -268,7 +275,7 @@ const BlogDetails = () => {
           )}
         </div>
 
-        {/* Neon Glow & Animated Border */}
+        {/* Neon glow and animated border */}
         <style jsx>{`
           .bg-darkBg { background-color: #0a0a0a; }
           .text-darkBg { color: #0a0a0a; }
@@ -279,7 +286,9 @@ const BlogDetails = () => {
             border: 4px solid;
             border-radius: 1rem;
             border-image-slice: 1;
-            border-image-source: linear-gradient(270deg, #ff00ff, #00ffff, #39ff14, #ff00ff);
+            border-image-source: linear-gradient(
+              270deg, #ff00ff, #00ffff, #39ff14, #ff00ff
+            );
             animation: borderGradient 6s linear infinite;
           }
           @keyframes borderGradient {
