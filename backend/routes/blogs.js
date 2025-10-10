@@ -159,44 +159,26 @@ router.delete("/:id", auth, async (req, res) => {
   }
 });
 
-// LIKE BLOG (no login required)
-router.post("/:id/like", async (req, res) => {
+// LIKE BLOG
+router.post("/:id/like", auth, async (req, res) => {
   try {
     const blog = await Blog.findById(req.params.id);
     if (!blog) return res.status(404).json({ message: "Blog not found" });
 
-    // Simple guest like (no user tracking, just count)
-    blog.likesCount = (blog.likesCount || 0) + (req.body.action === "unlike" ? -1 : 1);
-
-    // Prevent negative likes
-    if (blog.likesCount < 0) blog.likesCount = 0;
+    const userIdStr = req.user._id.toString();
+    if (blog.likes.map((l) => l.toString()).includes(userIdStr)) {
+      blog.likes = blog.likes.filter((id) => id.toString() !== userIdStr);
+    } else {
+      blog.likes.push(req.user._id);
+    }
 
     await blog.save();
-    res.status(200).json({ message: "Like updated", likes: blog.likesCount });
+    res.status(200).json(blog);
   } catch (err) {
     console.error("Like blog error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
-
-// DISLIKE BLOG (no login required)
-router.post("/:id/dislike", async (req, res) => {
-  try {
-    const blog = await Blog.findById(req.params.id);
-    if (!blog) return res.status(404).json({ message: "Blog not found" });
-
-    blog.dislikesCount = (blog.dislikesCount || 0) + (req.body.action === "undislike" ? -1 : 1);
-
-    if (blog.dislikesCount < 0) blog.dislikesCount = 0;
-
-    await blog.save();
-    res.status(200).json({ message: "Dislike updated", dislikes: blog.dislikesCount });
-  } catch (err) {
-    console.error("Dislike blog error:", err);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
 
 // ADD COMMENT
 router.post("/:id/comment", auth, async (req, res) => {
@@ -225,4 +207,3 @@ router.get("/:id/comments", async (req, res) => {
 });
 
 module.exports = router;
-
