@@ -221,28 +221,31 @@ router.post("/:id/share", async (req, res) => {
 });
 
 // FOLLOW AUTHOR
+// routes/blogs.js
 router.post("/:id/follow", auth, async (req, res) => {
   try {
-    const blog = await Blog.findById(req.params.id);
+    const blog = await Blog.findById(req.params.id).populate("author");
     if (!blog) return res.status(404).json({ message: "Blog not found" });
 
+    const author = blog.author;
     const userIdStr = req.user._id.toString();
 
-    if (blog.followers.map(f => f.toString()).includes(userIdStr)) {
+    if (author.followers.map(f => f.toString()).includes(userIdStr)) {
       // Unfollow
-      blog.followers = blog.followers.filter(id => id.toString() !== userIdStr);
+      author.followers = author.followers.filter(id => id.toString() !== userIdStr);
     } else {
       // Follow
-      blog.followers.push(req.user._id);
+      author.followers.push(req.user._id);
     }
 
-    await blog.save();
-    res.status(200).json(blog);
+    await author.save();
+    res.status(200).json({ followers: author.followers.length });
   } catch (err) {
-    console.error("Follow blog author error:", err);
+    console.error("Follow author error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
+
 
 
 
@@ -273,6 +276,7 @@ router.get("/:id/comments", async (req, res) => {
 });
 
 module.exports = router;
+
 
 
 
