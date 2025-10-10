@@ -180,6 +180,27 @@ router.post("/:id/like", auth, async (req, res) => {
   }
 });
 
+// DISLIKE BLOG
+router.post("/:id/dislike", auth, async (req, res) => {
+  try {
+    const blog = await Blog.findById(req.params.id);
+    if (!blog) return res.status(404).json({ message: "Blog not found" });
+
+    const userIdStr = req.user._id.toString();
+    if (blog.dislikes.map((d) => d.toString()).includes(userIdStr)) {
+      blog.dislikes = blog.dislikes.filter((id) => id.toString() !== userIdStr);
+    } else {
+      blog.dislikes.push(req.user._id);
+    }
+
+    await blog.save();
+    res.status(200).json(blog);
+  } catch (err) {
+    console.error("Dislike blog error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // ADD COMMENT
 router.post("/:id/comment", auth, async (req, res) => {
   try {
@@ -207,3 +228,4 @@ router.get("/:id/comments", async (req, res) => {
 });
 
 module.exports = router;
+
