@@ -203,6 +203,23 @@ router.post("/:id/dislike", auth, async (req, res) => {
   }
 });
 
+
+// SHARE BLOG (anonymous, increments share count)
+router.post("/:id/share", async (req, res) => {
+  try {
+    const blog = await Blog.findById(req.params.id);
+    if (!blog) return res.status(404).json({ message: "Blog not found" });
+
+    blog.shares = (blog.shares || 0) + 1; // increment share count
+    await blog.save();
+
+    res.status(200).json({ message: "Blog shared successfully", shares: blog.shares });
+  } catch (err) {
+    console.error("Share blog error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // FOLLOW AUTHOR
 router.post("/:id/follow", auth, async (req, res) => {
   try {
@@ -256,6 +273,7 @@ router.get("/:id/comments", async (req, res) => {
 });
 
 module.exports = router;
+
 
 
 
