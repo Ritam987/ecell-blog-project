@@ -203,6 +203,31 @@ router.post("/:id/dislike", auth, async (req, res) => {
   }
 });
 
+// FOLLOW AUTHOR
+router.post("/:id/follow", auth, async (req, res) => {
+  try {
+    const blog = await Blog.findById(req.params.id);
+    if (!blog) return res.status(404).json({ message: "Blog not found" });
+
+    const userIdStr = req.user._id.toString();
+
+    if (blog.followers.map(f => f.toString()).includes(userIdStr)) {
+      // Unfollow
+      blog.followers = blog.followers.filter(id => id.toString() !== userIdStr);
+    } else {
+      // Follow
+      blog.followers.push(req.user._id);
+    }
+
+    await blog.save();
+    res.status(200).json(blog);
+  } catch (err) {
+    console.error("Follow blog author error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
 
 // ADD COMMENT
 router.post("/:id/comment", auth, async (req, res) => {
@@ -231,5 +256,6 @@ router.get("/:id/comments", async (req, res) => {
 });
 
 module.exports = router;
+
 
 
