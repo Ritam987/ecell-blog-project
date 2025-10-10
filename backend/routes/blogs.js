@@ -221,13 +221,13 @@ router.post("/:id/share", async (req, res) => {
 });
 
 // FOLLOW AUTHOR
-// routes/blogs.js
+// FOLLOW AUTHOR
 router.post("/:id/follow", auth, async (req, res) => {
   try {
     const blog = await Blog.findById(req.params.id).populate("author");
     if (!blog) return res.status(404).json({ message: "Blog not found" });
 
-    const author = blog.author;
+    const author = blog.author; // the User object
     const userIdStr = req.user._id.toString();
 
     if (author.followers.map(f => f.toString()).includes(userIdStr)) {
@@ -239,12 +239,17 @@ router.post("/:id/follow", auth, async (req, res) => {
     }
 
     await author.save();
-    res.status(200).json({ followers: author.followers.length });
+
+    res.status(200).json({
+      followersCount: author.followers.length,
+      isFollowing: author.followers.includes(req.user._id),
+    });
   } catch (err) {
     console.error("Follow author error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
+
 
 
 
@@ -276,6 +281,7 @@ router.get("/:id/comments", async (req, res) => {
 });
 
 module.exports = router;
+
 
 
 
