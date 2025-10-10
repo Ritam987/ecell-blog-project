@@ -35,7 +35,6 @@ const BlogDetails = () => {
     fetchComments();
   }, [id]);
 
-  // Like handler
   const handleLike = async () => {
     try {
       const res = await API.post(
@@ -49,7 +48,6 @@ const BlogDetails = () => {
     }
   };
 
-  // Dislike handler
   const handleDislike = async () => {
     try {
       const res = await API.post(
@@ -63,7 +61,6 @@ const BlogDetails = () => {
     }
   };
 
-  // Follow handler
   const handleFollow = async () => {
     try {
       const res = await API.post(
@@ -74,6 +71,23 @@ const BlogDetails = () => {
       setBlog(res.data);
     } catch (err) {
       alert(err.response?.data?.message || "Error following author");
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      // Copy link to clipboard
+      const url = window.location.href;
+      await navigator.clipboard.writeText(url);
+
+      // Increment share count in backend
+      const res = await API.post(`/blogs/${id}/share`);
+      setBlog(prev => ({ ...prev, shares: res.data.shares }));
+
+      alert("Link copied to clipboard!");
+    } catch (err) {
+      console.error(err);
+      alert("Error sharing blog");
     }
   };
 
@@ -112,26 +126,7 @@ const BlogDetails = () => {
         >
           {blog.title}
         </motion.h1>
-        <p className="text-graySoft mb-2 text-center">
-          by {blog.author?.name}
-        </p>
-
-        {/* Follow button */}
-        {currentUser && blog.author?._id !== currentUser._id && (
-          <div className="flex justify-center mb-4">
-            <motion.button
-              onClick={handleFollow}
-              whileHover={{ scale: 1.05, boxShadow: "0 0 10px #ffbf00" }}
-              className={`px-4 py-2 rounded transition-shadow duration-300 ${
-                blog.followers?.includes(currentUser._id)
-                  ? "bg-neonGreen text-darkBg shadow-neon"
-                  : "bg-gray-700 text-white"
-              }`}
-            >
-              {blog.followers?.includes(currentUser._id) ? "Following" : "Follow"} ({blog.followers?.length || 0})
-            </motion.button>
-          </div>
-        )}
+        <p className="text-graySoft mb-4 text-center">by {blog.author?.name}</p>
 
         {blog.image && (
           <motion.img
@@ -165,7 +160,7 @@ const BlogDetails = () => {
           </motion.div>
         )}
 
-        {/* Like and Dislike buttons */}
+        {/* Action buttons */}
         <motion.div className="mt-4 flex items-center justify-center space-x-4">
           <motion.button
             onClick={handleLike}
@@ -181,17 +176,40 @@ const BlogDetails = () => {
 
           <motion.button
             onClick={handleDislike}
-            whileHover={{ scale: 1.05, boxShadow: "0 0 10px #00ff00" }}
+            whileHover={{ scale: 1.05, boxShadow: "0 0 10px #ff4500" }}
             className={`px-3 py-1 rounded transition-shadow duration-300 ${
               blog.dislikes?.includes(currentUser?._id)
-                ? "bg-neonRed text-darkBg shadow-neon"
+                ? "bg-red-500 text-white shadow-neon"
                 : "bg-gray-700 text-white"
             }`}
           >
             👎 {blog.dislikes?.length || 0} Dislike
           </motion.button>
+
+          {currentUser && (
+            <motion.button
+              onClick={handleFollow}
+              whileHover={{ scale: 1.05, boxShadow: "0 0 10px #00ff00" }}
+              className={`px-3 py-1 rounded transition-shadow duration-300 ${
+                blog.followers?.includes(currentUser?._id)
+                  ? "bg-neonGreen text-darkBg shadow-neon"
+                  : "bg-gray-700 text-white"
+              }`}
+            >
+              ➕ {blog.followers?.length || 0} Follow
+            </motion.button>
+          )}
+
+          <motion.button
+            onClick={handleShare}
+            whileHover={{ scale: 1.05, boxShadow: "0 0 10px #00ffff" }}
+            className="px-3 py-1 rounded bg-neonBlue text-darkBg shadow-neon transition-shadow duration-300"
+          >
+            🔗 {blog.shares || 0} Share
+          </motion.button>
         </motion.div>
 
+        {/* Comments section */}
         <div className="mt-6">
           <h2 className="text-2xl font-semibold text-neonBlue mb-2 text-center">
             Comments
