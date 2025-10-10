@@ -8,8 +8,10 @@ const blogSchema = new mongoose.Schema(
     tags: [String],
     image: { type: mongoose.Schema.Types.ObjectId, ref: "blogImages" }, // store GridFS file ID
     likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    dislikes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   },
   { timestamps: true }
 );
 
 module.exports = mongoose.model("Blog", blogSchema);
+
