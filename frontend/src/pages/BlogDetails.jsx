@@ -48,6 +48,19 @@ const BlogDetails = () => {
     }
   };
 
+  const handleDislike = async () => {
+    try {
+      const res = await API.post(
+        `/blogs/${id}/dislike`,
+        {},
+        { headers: { Authorization: `Bearer ${getToken()}` } }
+      );
+      setBlog(res.data);
+    } catch (err) {
+      alert(err.response?.data?.message || "Error disliking blog");
+    }
+  };
+
   const handleComment = async () => {
     if (!commentText) return;
     try {
@@ -117,6 +130,7 @@ const BlogDetails = () => {
           </motion.div>
         )}
 
+        {/* Like & Dislike Buttons */}
         <motion.div className="mt-4 flex items-center justify-center space-x-4">
           <motion.button
             onClick={handleLike}
@@ -128,6 +142,18 @@ const BlogDetails = () => {
             }`}
           >
             ❤️ {blog.likes?.length || 0} Like
+          </motion.button>
+
+          <motion.button
+            onClick={handleDislike}
+            whileHover={{ scale: 1.05, boxShadow: "0 0 10px #00ff00" }}
+            className={`px-3 py-1 rounded transition-shadow duration-300 ${
+              blog.dislikes?.includes(currentUser?._id)
+                ? "bg-neonRed text-darkBg shadow-neon"
+                : "bg-gray-700 text-white"
+            }`}
+          >
+            👎 {blog.dislikes?.length || 0} Dislike
           </motion.button>
         </motion.div>
 
