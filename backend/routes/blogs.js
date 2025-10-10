@@ -220,39 +220,39 @@ router.post("/:id/share", async (req, res) => {
   }
 });
 
-// FOLLOW AUTHOR
-// FOLLOW AUTHOR
+
+// FOLLOW / UNFOLLOW AUTHOR
 router.post("/:id/follow", auth, async (req, res) => {
   try {
-    const blog = await Blog.findById(req.params.id).populate("author");
+    const blog = await Blog.findById(req.params.id);
     if (!blog) return res.status(404).json({ message: "Blog not found" });
 
-    const author = await User.findById(blog.author._id);
+    // Ensure followers array exists
+    if (!blog.followers) blog.followers = [];
+
     const userIdStr = req.user._id.toString();
 
-    let isFollowing;
-
-    if (author.followers.map(f => f.toString()).includes(userIdStr)) {
+    if (blog.followers.map(f => f.toString()).includes(userIdStr)) {
       // Unfollow
-      author.followers = author.followers.filter(f => f.toString() !== userIdStr);
-      isFollowing = false;
+      blog.followers = blog.followers.filter(id => id.toString() !== userIdStr);
     } else {
       // Follow
-      author.followers.push(req.user._id);
-      isFollowing = true;
+      blog.followers.push(req.user._id);
     }
 
-    await author.save();
+    // Save changes
+    await blog.save();
 
-    res.status(200).json({
-      followersCount: author.followers.length,
-      isFollowing
-    });
+    // Populate author details to send back
+    const updatedBlog = await Blog.findById(req.params.id).populate("author", "name email");
+
+    res.status(200).json(updatedBlog);
   } catch (err) {
-    console.error("Follow author error:", err);
+    console.error("Follow blog author error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
+
 
 
 
@@ -286,6 +286,7 @@ router.get("/:id/comments", async (req, res) => {
 });
 
 module.exports = router;
+
 
 
 
