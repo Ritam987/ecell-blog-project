@@ -8,14 +8,17 @@ const BlogDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const currentUser = getUser();
+
   const [blog, setBlog] = useState({});
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState("");
+  const [authorFollowers, setAuthorFollowers] = useState(0);
 
   const fetchBlog = async () => {
     try {
       const res = await API.get(`/blogs/${id}`);
       setBlog(res.data);
+      setAuthorFollowers(res.data.author?.followers?.length || 0);
     } catch (err) {
       alert(err.response?.data?.message || "Error fetching blog");
     }
@@ -35,6 +38,7 @@ const BlogDetails = () => {
     fetchComments();
   }, [id]);
 
+  // Like
   const handleLike = async () => {
     try {
       const res = await API.post(
@@ -48,6 +52,7 @@ const BlogDetails = () => {
     }
   };
 
+  // Dislike
   const handleDislike = async () => {
     try {
       const res = await API.post(
@@ -61,6 +66,7 @@ const BlogDetails = () => {
     }
   };
 
+  // Follow author
   const handleFollow = async () => {
     try {
       const res = await API.post(
@@ -68,29 +74,30 @@ const BlogDetails = () => {
         {},
         { headers: { Authorization: `Bearer ${getToken()}` } }
       );
-      setBlog(res.data);
+      setAuthorFollowers(res.data.followers);
     } catch (err) {
       alert(err.response?.data?.message || "Error following author");
     }
   };
 
+  // Share blog
   const handleShare = async () => {
+    const shareUrl = window.location.href;
     try {
       // Copy link to clipboard
-      const url = window.location.href;
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(shareUrl);
+      alert("Blog link copied to clipboard!");
 
-      // Increment share count in backend
-      const res = await API.post(`/blogs/${id}/share`);
-      setBlog(prev => ({ ...prev, shares: res.data.shares }));
-
-      alert("Link copied to clipboard!");
+      // Increment share count on server
+      await API.post(`/blogs/${id}/share`);
+      // Refresh blog to update share count
+      fetchBlog();
     } catch (err) {
-      console.error(err);
       alert("Error sharing blog");
     }
   };
 
+  // Comment
   const handleComment = async () => {
     if (!commentText) return;
     try {
@@ -119,6 +126,7 @@ const BlogDetails = () => {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
       >
+        {/* Title */}
         <motion.h1
           className="text-4xl font-bold text-neonBlue mb-2 text-center"
           initial={{ opacity: 0, y: 20 }}
@@ -126,8 +134,24 @@ const BlogDetails = () => {
         >
           {blog.title}
         </motion.h1>
-        <p className="text-graySoft mb-4 text-center">by {blog.author?.name}</p>
 
+        {/* Author and follow */}
+        <p className="text-graySoft mb-4 text-center flex flex-col sm:flex-row items-center justify-center gap-2">
+          by <span className="font-semibold">{blog.author?.name}</span>
+          {currentUser && blog.author?._id !== currentUser._id && (
+            <motion.button
+              onClick={handleFollow}
+              whileHover={{ scale: 1.05, boxShadow: "0 0 10px #00ffbf" }}
+              className="px-3 py-1 rounded bg-neonGreen text-darkBg shadow-neon transition-shadow duration-300"
+            >
+              {blog.author?.followers?.includes(currentUser?._id)
+                ? "Unfollow"
+                : "Follow"} ({authorFollowers})
+            </motion.button>
+          )}
+        </p>
+
+        {/* Image */}
         {blog.image && (
           <motion.img
             src={`https://ecell-blog-project.onrender.com/api/blogs/image/${blog.image}`}
@@ -139,6 +163,7 @@ const BlogDetails = () => {
           />
         )}
 
+        {/* Content */}
         <motion.p
           className="mt-2 text-graySoft"
           initial={{ opacity: 0 }}
@@ -148,6 +173,7 @@ const BlogDetails = () => {
           {blog.content}
         </motion.p>
 
+        {/* Edit button for author */}
         {currentUser && blog.author?._id === currentUser._id && (
           <motion.div className="mt-4 text-center">
             <motion.button
@@ -160,8 +186,8 @@ const BlogDetails = () => {
           </motion.div>
         )}
 
-        {/* Action buttons */}
-        <motion.div className="mt-4 flex items-center justify-center space-x-4">
+        {/* Like, Dislike, Share buttons */}
+        <motion.div className="mt-4 flex items-center justify-center space-x-4 flex-wrap gap-2">
           <motion.button
             onClick={handleLike}
             whileHover={{ scale: 1.05, boxShadow: "0 0 10px #ff00ff" }}
@@ -176,40 +202,26 @@ const BlogDetails = () => {
 
           <motion.button
             onClick={handleDislike}
-            whileHover={{ scale: 1.05, boxShadow: "0 0 10px #ff4500" }}
+            whileHover={{ scale: 1.05, boxShadow: "0 0 10px #ffbf00" }}
             className={`px-3 py-1 rounded transition-shadow duration-300 ${
               blog.dislikes?.includes(currentUser?._id)
-                ? "bg-red-500 text-white shadow-neon"
+                ? "bg-neonOrange text-darkBg shadow-neon"
                 : "bg-gray-700 text-white"
             }`}
           >
             👎 {blog.dislikes?.length || 0} Dislike
           </motion.button>
 
-          {currentUser && (
-            <motion.button
-              onClick={handleFollow}
-              whileHover={{ scale: 1.05, boxShadow: "0 0 10px #00ff00" }}
-              className={`px-3 py-1 rounded transition-shadow duration-300 ${
-                blog.followers?.includes(currentUser?._id)
-                  ? "bg-neonGreen text-darkBg shadow-neon"
-                  : "bg-gray-700 text-white"
-              }`}
-            >
-              ➕ {blog.followers?.length || 0} Follow
-            </motion.button>
-          )}
-
           <motion.button
             onClick={handleShare}
             whileHover={{ scale: 1.05, boxShadow: "0 0 10px #00ffff" }}
             className="px-3 py-1 rounded bg-neonBlue text-darkBg shadow-neon transition-shadow duration-300"
           >
-            🔗 {blog.shares || 0} Share
+            🔗 Share ({blog.shares || 0})
           </motion.button>
         </motion.div>
 
-        {/* Comments section */}
+        {/* Comments */}
         <div className="mt-6">
           <h2 className="text-2xl font-semibold text-neonBlue mb-2 text-center">
             Comments
