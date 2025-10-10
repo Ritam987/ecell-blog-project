@@ -191,6 +191,8 @@ router.post("/:id/dislike", auth, async (req, res) => {
       blog.dislikes = blog.dislikes.filter((id) => id.toString() !== userIdStr);
     } else {
       blog.dislikes.push(req.user._id);
+      // Optional: remove like if user had liked
+      blog.likes = blog.likes.filter((id) => id.toString() !== userIdStr);
     }
 
     await blog.save();
@@ -200,6 +202,7 @@ router.post("/:id/dislike", auth, async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
 
 // ADD COMMENT
 router.post("/:id/comment", auth, async (req, res) => {
@@ -228,4 +231,5 @@ router.get("/:id/comments", async (req, res) => {
 });
 
 module.exports = router;
+
 
