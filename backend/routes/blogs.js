@@ -227,28 +227,33 @@ router.post("/:id/follow", auth, async (req, res) => {
     const blog = await Blog.findById(req.params.id).populate("author");
     if (!blog) return res.status(404).json({ message: "Blog not found" });
 
-    const author = blog.author; // the User object
+    const author = await User.findById(blog.author._id);
     const userIdStr = req.user._id.toString();
+
+    let isFollowing;
 
     if (author.followers.map(f => f.toString()).includes(userIdStr)) {
       // Unfollow
-      author.followers = author.followers.filter(id => id.toString() !== userIdStr);
+      author.followers = author.followers.filter(f => f.toString() !== userIdStr);
+      isFollowing = false;
     } else {
       // Follow
       author.followers.push(req.user._id);
+      isFollowing = true;
     }
 
     await author.save();
 
     res.status(200).json({
       followersCount: author.followers.length,
-      isFollowing: author.followers.includes(req.user._id),
+      isFollowing
     });
   } catch (err) {
     console.error("Follow author error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
+
 
 
 
@@ -281,6 +286,7 @@ router.get("/:id/comments", async (req, res) => {
 });
 
 module.exports = router;
+
 
 
 
