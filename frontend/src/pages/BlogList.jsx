@@ -70,4 +70,4 @@ const BlogList = () => {
 
 export default BlogList;
 
-this is the bloglist.jsx just make the cards animated
+
