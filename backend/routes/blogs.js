@@ -257,29 +257,7 @@ router.post("/:id/follow", auth, async (req, res) => {
 
 
 
-// GET /blogs/search?query=...
-router.get("/search", async (req, res) => {
-  const { query } = req.query;
 
-  if (!query) return res.status(400).json({ message: "Query is required" });
-
-  try {
-    const regex = new RegExp(query, "i"); // case-insensitive
-    const blogs = await Blog.find({
-      $or: [
-        { title: regex },
-        { content: regex },
-        { tags: { $in: [regex] } },
-        { "author.name": regex } // if you populate author name
-      ],
-    }).populate("author", "name");
-
-    res.json(blogs);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
-  }
-});
 
 
 
@@ -314,6 +292,7 @@ router.get("/:id/comments", async (req, res) => {
 });
 
 module.exports = router;
+
 
 
 
