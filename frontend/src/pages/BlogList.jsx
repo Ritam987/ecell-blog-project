@@ -52,8 +52,8 @@ const BlogList = () => {
 
   return (
     <div className="max-w-4xl mx-auto mt-10 space-y-6">
-      {/* Search Input with Icon */}
-      <div className="mb-6 flex justify-center items-center relative">
+      {/* Search Input */}
+      <div className="mb-6 flex justify-center relative">
         <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-xl pointer-events-none" />
         <input
           type="text"
