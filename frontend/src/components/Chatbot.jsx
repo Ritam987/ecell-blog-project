@@ -1,7 +1,8 @@
 // src/components/Chatbot.jsx
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useLocation } from "react-router-dom"; // ✅ detect route changes
+import { useLocation } from "react-router-dom";
+import { FaRobot } from "react-icons/fa"; // cute robot icon
 
 const ruleBasedQA = {
   "User Actions": [
@@ -26,14 +27,14 @@ const Chatbot = () => {
   ]);
   const [visible, setVisible] = useState(false);
   const chatEndRef = useRef(null);
-  const location = useLocation(); // ✅ hook to detect page change
+  const location = useLocation();
 
   // scroll to bottom when new message arrives
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // ✅ auto-hide chatbot and reset when route changes
+  // auto-hide chatbot and reset when route changes
   useEffect(() => {
     setVisible(false);
     setMessages([{ type: "bot", text: "Hello! I am your assistant. Click a question below to get guidance." }]);
@@ -49,15 +50,17 @@ const Chatbot = () => {
 
   return (
     <div className="fixed bottom-4 right-4 flex flex-col items-end z-50">
-      {/* Toggle Button */}
-      <motion.button
-        className="mb-2 bg-neonBlue text-white px-4 py-2 rounded shadow-neon transition-all duration-300"
+      {/* Floating Animated Robot Icon */}
+      <motion.div
+        className="mb-2 bg-neonBlue text-white p-3 rounded-full shadow-neon cursor-pointer flex items-center justify-center"
         onClick={() => setVisible(!visible)}
-        whileHover={{ scale: 1.05, boxShadow: "0 0 10px #39ff14" }}
+        animate={{ y: [0, -10, 0] }} // floating effect
+        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+        whileHover={{ scale: 1.2, boxShadow: "0 0 15px #39ff14" }}
         whileTap={{ scale: 0.95 }}
       >
-        {visible ? "Hide Chatbot" : "Show Chatbot"}
-      </motion.button>
+        <FaRobot size={28} />
+      </motion.div>
 
       {/* Chatbox */}
       <AnimatePresence>
