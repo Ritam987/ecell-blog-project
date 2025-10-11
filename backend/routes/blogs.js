@@ -253,6 +253,33 @@ router.post("/:id/follow", auth, async (req, res) => {
   }
 });
 
+// routes/blogs.js
+const express = require("express");
+const router = express.Router();
+const Blog = require("../models/Blog");
+
+// GET /blogs/search?q=keyword
+router.get("/search", async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q) return res.status(400).json({ message: "Query is required" });
+
+    // Search by title or content (case-insensitive)
+    const blogs = await Blog.find({
+      $or: [
+        { title: { $regex: q, $options: "i" } },
+        { content: { $regex: q, $options: "i" } },
+      ],
+    }).populate("author", "name");
+
+    res.json(blogs);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server Error" });
+  }
+});
+
+module.exports = router;
 
 
 
@@ -286,6 +313,7 @@ router.get("/:id/comments", async (req, res) => {
 });
 
 module.exports = router;
+
 
 
 
