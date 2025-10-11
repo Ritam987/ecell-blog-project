@@ -1,14 +1,10 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { FiSearch } from "react-icons/fi";
+import { motion } from "framer-motion";
 
 export default function Navbar() {
   const [user, setUser] = useState(null);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchText, setSearchText] = useState("");
   const navigate = useNavigate();
-  const inputRef = useRef(null);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -22,35 +18,14 @@ export default function Navbar() {
     navigate("/login");
   };
 
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    const trimmed = searchText.trim();
-    if (trimmed) {
-      navigate(`/blogs?query=${encodeURIComponent(trimmed)}`);
-      setSearchOpen(false);
-      setSearchText("");
-    }
-  };
-
-  // Close search if clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (inputRef.current && !inputRef.current.contains(e.target)) {
-        setSearchOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
   const linkVariants = {
     hover: { scale: 1.1, color: "#ff00ff", textShadow: "0 0 8px #ff00ff" },
   };
 
   return (
     <nav className="fixed top-0 left-0 w-full z-50 bg-darkBg bg-opacity-90 backdrop-blur-md border-b-2 border-neonBlue shadow-neon py-4 px-8 flex justify-between items-center">
-      {/* Left: Logo + Search */}
-      <div className="flex items-center gap-4 relative">
+      {/* Left: Logo */}
+      <div className="flex items-center gap-4">
         <Link
           to="/"
           className="font-bold text-2xl text-neonBlue animate-glow flex items-center gap-2"
@@ -58,45 +33,6 @@ export default function Navbar() {
           <img src="/logo.jpg" alt="Logo" className="w-8 h-8 rounded-full" />
           E-CELL
         </Link>
-
-        {/* Search Icon */}
-        <motion.div
-          className="cursor-pointer text-gray-400 z-50"
-          onClick={() => setSearchOpen((prev) => !prev)}
-          whileHover={{ scale: 1.2, color: "#00ffff", textShadow: "0 0 8px #00ffff" }}
-        >
-          <FiSearch size={24} />
-        </motion.div>
-
-        {/* Animated Search Box */}
-        <AnimatePresence>
-          {searchOpen && (
-            <motion.form
-              ref={inputRef}
-              onSubmit={handleSearchSubmit}
-              initial={{ opacity: 0, width: 0 }}
-              animate={{ opacity: 1, width: 250 }}
-              exit={{ opacity: 0, width: 0 }}
-              transition={{ duration: 0.3 }}
-              className="absolute left-10 top-0 flex items-center bg-darkBg border border-neonBlue rounded overflow-hidden"
-            >
-              <input
-                type="text"
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                placeholder="Search blogs..."
-                className="w-full px-3 py-1 bg-darkBg text-white outline-none"
-                autoFocus
-              />
-              <button
-                type="submit"
-                className="px-3 bg-neonBlue text-darkBg hover:bg-neonPink transition-colors"
-              >
-                Search
-              </button>
-            </motion.form>
-          )}
-        </AnimatePresence>
       </div>
 
       {/* Right Links */}
