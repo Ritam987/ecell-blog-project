@@ -3,12 +3,12 @@ import API from "../utils/api";
 import { getToken, getUser } from "../utils/auth";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { FaRobot } from "react-icons/fa"; // cute robot icon
+import { FaRobot } from "react-icons/fa"; // Robot icon
 import BlogCard from "../components/BlogCard";
 
 const Home = () => {
   const [blogs, setBlogs] = useState([]);
-  const [chatOpen, setChatOpen] = useState(false); // chatbot toggle
+  const [chatOpen, setChatOpen] = useState(false); // Chatbot panel toggle
   const currentUser = getUser();
   const navigate = useNavigate();
 
@@ -39,6 +39,7 @@ const Home = () => {
     }
   };
 
+  // Framer Motion variants for staggered list
   const containerVariants = {
     hidden: {},
     visible: { transition: { staggerChildren: 0.1 } },
@@ -63,6 +64,7 @@ const Home = () => {
           <motion.div key={blog._id} variants={itemVariants}>
             <BlogCard blog={blog} />
 
+            {/* Action Buttons if current user is author */}
             {currentUser && blog.author._id === currentUser._id && (
               <div className="mt-2 flex space-x-2">
                 <motion.button
@@ -89,9 +91,9 @@ const Home = () => {
       <motion.div
         onClick={() => setChatOpen((prev) => !prev)}
         className="fixed bottom-8 right-8 w-16 h-16 bg-neonPink rounded-full shadow-neon flex items-center justify-center cursor-pointer z-50"
-        animate={{ y: [0, -10, 0] }} // floating animation
+        animate={{ y: [0, -10, 0] }} // Floating animation
         transition={{ repeat: Infinity, duration: 2 }}
-        whileHover={{ scale: 1.2, rotate: [0, 15, -15, 0] }} // playful hover
+        whileHover={{ scale: 1.2, rotate: [0, 15, -15, 0] }} // Playful hover
       >
         <FaRobot size={32} color="#0ff" />
       </motion.div>
