@@ -1,14 +1,13 @@
 import React, { useEffect, useState } from "react";
 import API from "../utils/api";
 import { getToken, getUser } from "../utils/auth";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import BlogCard from "../components/BlogCard";
 import { FaRobot } from "react-icons/fa"; // Robot icon
+import BlogCard from "../components/BlogCard";
 
 const Home = () => {
   const [blogs, setBlogs] = useState([]);
-  const [chatOpen, setChatOpen] = useState(false); // chatbot toggle
   const currentUser = getUser();
   const navigate = useNavigate();
 
@@ -39,6 +38,10 @@ const Home = () => {
     }
   };
 
+  // Chatbot toggle (placeholder)
+  const [chatbotOpen, setChatbotOpen] = useState(false);
+  const toggleChatbot = () => setChatbotOpen((prev) => !prev);
+
   // Framer Motion variants for staggered list
   const containerVariants = {
     hidden: {},
@@ -49,9 +52,6 @@ const Home = () => {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0 },
   };
-
-  // Toggle chatbot
-  const toggleChatbot = () => setChatOpen((prev) => !prev);
 
   return (
     <motion.div
@@ -90,7 +90,7 @@ const Home = () => {
         ))}
       </div>
 
-      {/* Floating Animated Chatbot Icon */}
+      {/* Floating Animated Chatbot Robot Icon */}
       <motion.div
         onClick={toggleChatbot}
         className="fixed bottom-6 right-6 w-16 h-16 bg-neonBlue text-darkBg rounded-full shadow-neon cursor-pointer flex items-center justify-center z-50"
@@ -101,11 +101,11 @@ const Home = () => {
         <FaRobot size={32} />
       </motion.div>
 
-      {/* You can render your actual chatbot component here */}
-      {chatOpen && (
-        <div className="fixed bottom-24 right-6 w-80 h-96 bg-darkBg border border-neonBlue rounded-xl shadow-neon p-4 z-50">
-          {/* Chatbot UI goes here */}
-          <p className="text-white text-center mt-8">Chatbot Placeholder</p>
+      {/* Optional: Chatbot Panel */}
+      {chatbotOpen && (
+        <div className="fixed bottom-24 right-6 w-80 h-96 bg-darkBg border border-neonBlue rounded shadow-neon z-50 p-4">
+          <h2 className="text-neonBlue font-bold mb-2">Chatbot</h2>
+          {/* Chatbot content goes here */}
         </div>
       )}
     </motion.div>
