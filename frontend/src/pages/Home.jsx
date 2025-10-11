@@ -3,11 +3,12 @@ import API from "../utils/api";
 import { getToken, getUser } from "../utils/auth";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { FaRobot } from "react-icons/fa"; // Robot icon
 import BlogCard from "../components/BlogCard";
+import { FaRobot } from "react-icons/fa"; // cute robot icon
 
 const Home = () => {
   const [blogs, setBlogs] = useState([]);
+  const [chatOpen, setChatOpen] = useState(false); // chatbot state
   const currentUser = getUser();
   const navigate = useNavigate();
 
@@ -38,11 +39,6 @@ const Home = () => {
     }
   };
 
-  // Chatbot toggle (placeholder)
-  const [chatbotOpen, setChatbotOpen] = useState(false);
-  const toggleChatbot = () => setChatbotOpen((prev) => !prev);
-
-  // Framer Motion variants for staggered list
   const containerVariants = {
     hidden: {},
     visible: { transition: { staggerChildren: 0.1 } },
@@ -67,7 +63,6 @@ const Home = () => {
           <motion.div key={blog._id} variants={itemVariants}>
             <BlogCard blog={blog} />
 
-            {/* Action Buttons if current user is author */}
             {currentUser && blog.author._id === currentUser._id && (
               <div className="mt-2 flex space-x-2">
                 <motion.button
@@ -90,22 +85,23 @@ const Home = () => {
         ))}
       </div>
 
-      {/* Floating Animated Chatbot Robot Icon */}
+      {/* Floating Robot Chatbot Icon */}
       <motion.div
-        onClick={toggleChatbot}
-        className="fixed bottom-6 right-6 w-16 h-16 bg-neonBlue text-darkBg rounded-full shadow-neon cursor-pointer flex items-center justify-center z-50"
-        whileHover={{ scale: 1.2, rotate: [0, 10, -10, 0] }}
-        animate={{ y: [0, -10, 0, -5, 0] }}
+        onClick={() => setChatOpen((prev) => !prev)}
+        className="fixed bottom-8 right-8 w-16 h-16 bg-neonPink rounded-full shadow-neon flex items-center justify-center cursor-pointer z-50"
+        animate={{ y: [0, -10, 0] }} // floating animation
         transition={{ repeat: Infinity, duration: 2 }}
+        whileHover={{ scale: 1.2, rotate: [0, 15, -15, 0] }}
       >
-        <FaRobot size={32} />
+        <FaRobot size={32} color="#0ff" />
       </motion.div>
 
-      {/* Optional: Chatbot Panel */}
-      {chatbotOpen && (
-        <div className="fixed bottom-24 right-6 w-80 h-96 bg-darkBg border border-neonBlue rounded shadow-neon z-50 p-4">
-          <h2 className="text-neonBlue font-bold mb-2">Chatbot</h2>
-          {/* Chatbot content goes here */}
+      {/* Chatbot panel (remains as before) */}
+      {chatOpen && (
+        <div className="fixed bottom-24 right-8 w-80 h-96 bg-darkBg rounded-xl shadow-neon p-4 z-50">
+          {/* Existing chatbot code goes here */}
+          {/* Example placeholder */}
+          <p className="text-white">Chatbot is ready to help you!</p>
         </div>
       )}
     </motion.div>
