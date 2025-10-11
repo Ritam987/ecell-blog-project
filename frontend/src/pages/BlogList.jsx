@@ -5,11 +5,14 @@ import { Link } from "react-router-dom";
 
 const BlogList = () => {
   const [blogs, setBlogs] = useState([]);
+  const [filteredBlogs, setFilteredBlogs] = useState([]);
+  const [searchText, setSearchText] = useState("");
 
   const fetchBlogs = async () => {
     try {
       const res = await API.get("/blogs");
       setBlogs(res.data);
+      setFilteredBlogs(res.data); // initialize filtered blogs
     } catch (err) {
       console.error("Error fetching blogs:", err.response || err);
       alert("Failed to fetch blogs");
@@ -27,13 +30,39 @@ const BlogList = () => {
     }
   };
 
+  // Filter blogs based on search
+  useEffect(() => {
+    if (!searchText) {
+      setFilteredBlogs(blogs);
+    } else {
+      const lowerSearch = searchText.toLowerCase();
+      const filtered = blogs.filter(
+        (blog) =>
+          blog.title.toLowerCase().includes(lowerSearch) ||
+          (blog.tags && blog.tags.some((tag) => tag.toLowerCase().includes(lowerSearch)))
+      );
+      setFilteredBlogs(filtered);
+    }
+  }, [searchText, blogs]);
+
   useEffect(() => {
     fetchBlogs();
   }, []);
 
   return (
     <div className="max-w-4xl mx-auto mt-10 space-y-6">
-      {blogs.map((blog) => (
+      {/* Search Input */}
+      <div className="mb-6 flex justify-center">
+        <input
+          type="text"
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          placeholder="Search blogs by title or tag..."
+          className="w-full max-w-md border p-2 rounded shadow focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
+      {filteredBlogs.map((blog) => (
         <div key={blog._id} className="bg-white p-6 rounded shadow-md">
           {blog.image && (
             <img
@@ -51,7 +80,7 @@ const BlogList = () => {
           <div className="mt-4 flex items-center gap-4">
             <button
               onClick={() => handleLike(blog._id)}
-              className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+              className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors duration-300"
             >
               Like ({blog.likes.length})
             </button>
@@ -64,10 +93,13 @@ const BlogList = () => {
           </div>
         </div>
       ))}
+
+      {/* No results */}
+      {filteredBlogs.length === 0 && (
+        <p className="text-center text-gray-500">No blogs found matching your search.</p>
+      )}
     </div>
   );
 };
 
 export default BlogList;
-
-
