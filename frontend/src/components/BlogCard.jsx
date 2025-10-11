@@ -20,29 +20,35 @@ const BlogCard = ({ blog }) => {
         />
       )}
 
-      {/* Title with hover animation */}
-      <h2 className="blog-title text-2xl font-bold text-neonBlue mb-2 text-center transition-all duration-300">
+      {/* Title with smooth hover glow */}
+      <h2 className="blog-title text-2xl font-bold text-neonBlue mb-2 text-center">
         {blog.title}
       </h2>
 
       <p className="text-graySoft text-center line-clamp-3">{blog.content}</p>
 
-      {/* Neon animation on hover */}
+      {/* Smooth fade in/out neon animation */}
       <style jsx>{`
         .blog-title {
           text-shadow: 0 0 5px #00ffff;
-          transition: text-shadow 0.3s ease, color 0.3s ease;
+          transition: 
+            text-shadow 0.6s ease-in-out,
+            color 0.6s ease-in-out,
+            transform 0.4s ease;
         }
+
         .blog-title:hover {
           color: #39ff14;
-          animation: glowPulse 1.2s infinite alternate;
+          transform: scale(1.03);
+          animation: glowPulse 1.5s ease-in-out infinite alternate;
         }
+
         @keyframes glowPulse {
           0% {
-            text-shadow: 0 0 10px #00ffff, 0 0 20px #39ff14, 0 0 30px #ff00ff;
+            text-shadow: 0 0 8px #00ffff, 0 0 15px #39ff14, 0 0 25px #ff00ff;
           }
           100% {
-            text-shadow: 0 0 20px #ff00ff, 0 0 40px #00ffff, 0 0 60px #39ff14;
+            text-shadow: 0 0 20px #ff00ff, 0 0 35px #00ffff, 0 0 50px #39ff14;
           }
         }
       `}</style>
