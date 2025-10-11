@@ -24,13 +24,15 @@ export default function Navbar() {
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
-    if (searchText.trim()) {
-      navigate(`/search?query=${encodeURIComponent(searchText.trim())}`);
-      setSearchText("");
+    const trimmed = searchText.trim();
+    if (trimmed) {
+      navigate(`/blogs?query=${encodeURIComponent(trimmed)}`);
       setSearchOpen(false);
+      setSearchText("");
     }
   };
 
+  // Close search if clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (inputRef.current && !inputRef.current.contains(e.target)) {
@@ -47,41 +49,36 @@ export default function Navbar() {
 
   return (
     <nav className="fixed top-0 left-0 w-full z-50 bg-darkBg bg-opacity-90 backdrop-blur-md border-b-2 border-neonBlue shadow-neon py-4 px-8 flex justify-between items-center">
-      
-      {/* Left: Logo */}
-      <Link
-        to="/"
-        className="font-bold text-2xl text-neonBlue animate-glow flex items-center gap-2"
-      >
-        <img src="/logo.jpg" alt="Logo" className="w-8 h-8 rounded-full" />
-        E-CELL
-      </Link>
+      {/* Left: Logo + Search */}
+      <div className="flex items-center gap-4 relative">
+        <Link
+          to="/"
+          className="font-bold text-2xl text-neonBlue animate-glow flex items-center gap-2"
+        >
+          <img src="/logo.jpg" alt="Logo" className="w-8 h-8 rounded-full" />
+          E-CELL
+        </Link>
 
-      {/* Center: Search icon + input */}
-      <div className="relative flex items-center">
+        {/* Search Icon */}
         <motion.div
-          className="cursor-pointer text-gray-400"
+          className="cursor-pointer text-gray-400 z-50"
           onClick={() => setSearchOpen((prev) => !prev)}
-          whileHover={{
-            scale: 1.2,
-            color: "#00ffff",
-            textShadow: "0 0 8px #00ffff",
-          }}
+          whileHover={{ scale: 1.2, color: "#00ffff", textShadow: "0 0 8px #00ffff" }}
         >
           <FiSearch size={24} />
         </motion.div>
 
-        {/* Search Box */}
+        {/* Animated Search Box */}
         <AnimatePresence>
           {searchOpen && (
             <motion.form
+              ref={inputRef}
+              onSubmit={handleSearchSubmit}
               initial={{ opacity: 0, width: 0 }}
               animate={{ opacity: 1, width: 250 }}
               exit={{ opacity: 0, width: 0 }}
               transition={{ duration: 0.3 }}
-              onSubmit={handleSearchSubmit}
-              ref={inputRef}
-              className="absolute left-8 top-0 flex items-center bg-darkBg border border-neonBlue rounded overflow-hidden"
+              className="absolute left-10 top-0 flex items-center bg-darkBg border border-neonBlue rounded overflow-hidden"
             >
               <input
                 type="text"
@@ -137,30 +134,17 @@ export default function Navbar() {
       </div>
 
       <style jsx>{`
-        .bg-darkBg {
-          background-color: #0a0a0a;
-        }
-        .text-neonBlue {
-          color: #0ff;
-        }
-        .bg-neonPink {
-          background-color: #ff00ff;
-        }
+        .bg-darkBg { background-color: #0a0a0a; }
+        .text-neonBlue { color: #0ff; }
+        .bg-neonPink { background-color: #ff00ff; }
         .shadow-neon {
           box-shadow: 0 0 8px #0ff, 0 0 16px #ff00ff, 0 0 24px #39ff14;
         }
         @keyframes neonGlow {
-          0%,
-          100% {
-            text-shadow: 0 0 5px #0ff, 0 0 10px #0ff, 0 0 20px #0ff;
-          }
-          50% {
-            text-shadow: 0 0 15px #0ff, 0 0 25px #ff00ff, 0 0 35px #39ff14;
-          }
+          0%, 100% { text-shadow: 0 0 5px #0ff, 0 0 10px #0ff, 0 0 20px #0ff; }
+          50% { text-shadow: 0 0 15px #0ff, 0 0 25px #ff00ff, 0 0 35px #39ff14; }
         }
-        .animate-glow {
-          animation: neonGlow 1.5s infinite alternate;
-        }
+        .animate-glow { animation: neonGlow 1.5s infinite alternate; }
       `}</style>
     </nav>
   );
