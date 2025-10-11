@@ -8,7 +8,7 @@ const BlogCard = ({ blog }) => {
 
   return (
     <motion.div
-      className="bg-darkBg rounded-2xl shadow-neon border border-neonBlue p-4 transition-all duration-300 cursor-pointer"
+      className="blog-card bg-darkBg rounded-2xl shadow-neon border border-neonBlue p-4 transition-all duration-300 cursor-pointer"
       whileHover={{ scale: 1.03 }}
       onClick={() => navigate(`/blog/${blog._id}`)}
     >
@@ -27,34 +27,33 @@ const BlogCard = ({ blog }) => {
       <p className="text-graySoft text-center line-clamp-3">{blog.content}</p>
 
       <style jsx>{`
+        /* Normal title state */
         .blog-title {
-          text-shadow: 0 0 5px #00ffff;
-          transition: 
-            text-shadow 0.6s ease,
-            color 0.6s ease,
-            transform 0.4s ease;
+          color: #00ffff;
+          text-shadow: 0 0 4px #00ffff40;
+          transition: all 0.6s ease;
         }
 
-        /* Hover glow */
-        .blog-title:hover {
+        /* When hovering the entire card, make the title glow */
+        .blog-card:hover .blog-title {
           color: #39ff14;
-          transform: scale(1.05);
           text-shadow: 0 0 10px #00ffff, 0 0 20px #39ff14, 0 0 30px #ff00ff;
+          transform: scale(1.05);
         }
 
-        /* Smooth fade-out after hover */
-        .blog-title:not(:hover) {
-          animation: fadeOutGlow 0.8s ease forwards;
+        /* Smooth fade-out when leaving the card */
+        .blog-card:not(:hover) .blog-title {
+          animation: fadeOutTitle 0.8s ease forwards;
         }
 
-        @keyframes fadeOutGlow {
+        @keyframes fadeOutTitle {
           from {
-            text-shadow: 0 0 20px #ff00ff, 0 0 30px #39ff14, 0 0 50px #00ffff;
             color: #39ff14;
+            text-shadow: 0 0 20px #00ffff, 0 0 30px #39ff14, 0 0 50px #ff00ff;
           }
           to {
-            text-shadow: 0 0 5px #00ffff;
             color: #00ffff;
+            text-shadow: 0 0 4px #00ffff40;
           }
         }
       `}</style>
