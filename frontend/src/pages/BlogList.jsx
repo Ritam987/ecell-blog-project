@@ -1,19 +1,24 @@
 import React, { useEffect, useState } from "react";
 import API from "../utils/api";
 import { getToken } from "../utils/auth";
-import { Link } from "react-router-dom";
-import { FiSearch } from "react-icons/fi"; // search icon
+import { Link, useLocation } from "react-router-dom";
+import { FiSearch } from "react-icons/fi";
+
+function useQuery() {
+  return new URLSearchParams(useLocation().search);
+}
 
 const BlogList = () => {
   const [blogs, setBlogs] = useState([]);
   const [filteredBlogs, setFilteredBlogs] = useState([]);
   const [searchText, setSearchText] = useState("");
+  const query = useQuery();
 
   const fetchBlogs = async () => {
     try {
       const res = await API.get("/blogs");
       setBlogs(res.data);
-      setFilteredBlogs(res.data); // initialize filtered blogs
+      setFilteredBlogs(res.data);
     } catch (err) {
       console.error("Error fetching blogs:", err.response || err);
       alert("Failed to fetch blogs");
@@ -31,7 +36,13 @@ const BlogList = () => {
     }
   };
 
-  // Filter blogs based on search
+  // Listen to query parameter for search
+  useEffect(() => {
+    const q = query.get("query") || "";
+    setSearchText(q);
+  }, [query]);
+
+  // Filter blogs based on searchText
   useEffect(() => {
     if (!searchText) {
       setFilteredBlogs(blogs);
@@ -52,7 +63,7 @@ const BlogList = () => {
 
   return (
     <div className="max-w-4xl mx-auto mt-10 space-y-6">
-      {/* Search Input */}
+      {/* Search Input inside BlogList for fallback */}
       <div className="mb-6 flex justify-center relative">
         <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-xl pointer-events-none" />
         <input
@@ -63,6 +74,12 @@ const BlogList = () => {
           className="w-full max-w-md pl-10 border p-2 rounded shadow focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
+
+      {filteredBlogs.length === 0 && (
+        <p className="text-center text-gray-500">
+          No blogs found matching your search.
+        </p>
+      )}
 
       {filteredBlogs.map((blog) => (
         <div key={blog._id} className="bg-white p-6 rounded shadow-md">
@@ -75,7 +92,8 @@ const BlogList = () => {
           )}
           <h2 className="text-2xl font-bold">{blog.title}</h2>
           <p className="text-sm text-gray-500">
-            By {blog.author.name} | {new Date(blog.createdAt).toLocaleDateString()}
+            By {blog.author.name} |{" "}
+            {new Date(blog.createdAt).toLocaleDateString()}
           </p>
           <p className="mt-2">{blog.content.slice(0, 200)}...</p>
           <p className="mt-2 text-blue-500">Tags: {blog.tags.join(", ")}</p>
@@ -95,11 +113,6 @@ const BlogList = () => {
           </div>
         </div>
       ))}
-
-      {/* No results */}
-      {filteredBlogs.length === 0 && (
-        <p className="text-center text-gray-500">No blogs found matching your search.</p>
-      )}
     </div>
   );
 };
