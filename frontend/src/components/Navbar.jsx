@@ -31,7 +31,6 @@ export default function Navbar() {
     }
   };
 
-  // Close search when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (inputRef.current && !inputRef.current.contains(e.target)) {
@@ -48,8 +47,8 @@ export default function Navbar() {
 
   return (
     <nav className="fixed top-0 left-0 w-full z-50 bg-darkBg bg-opacity-90 backdrop-blur-md border-b-2 border-neonBlue shadow-neon py-4 px-8 flex justify-between items-center">
-      {/* Left side: Logo + Search */}
-      <div className="flex items-center gap-4">
+      {/* Left: Logo + Search Icon */}
+      <div className="flex items-center gap-4 relative">
         <Link
           to="/"
           className="font-bold text-2xl text-neonBlue animate-glow flex items-center gap-2"
@@ -58,51 +57,51 @@ export default function Navbar() {
           E-CELL
         </Link>
 
-        {/* Search Icon & Input */}
-        <div className="relative" ref={inputRef}>
-          <motion.div
-            className="cursor-pointer text-gray-400"
-            onClick={() => setSearchOpen((prev) => !prev)}
-            whileHover={{
-              scale: 1.2,
-              color: "#00ffff",
-              textShadow: "0 0 8px #00ffff",
-            }}
-          >
-            <FiSearch size={24} />
-          </motion.div>
+        {/* Search Icon */}
+        <motion.div
+          className="cursor-pointer text-gray-400 z-50"
+          onClick={() => setSearchOpen((prev) => !prev)}
+          whileHover={{
+            scale: 1.2,
+            color: "#00ffff",
+            textShadow: "0 0 8px #00ffff",
+          }}
+        >
+          <FiSearch size={24} />
+        </motion.div>
 
-          <AnimatePresence>
-            {searchOpen && (
-              <motion.form
-                initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: 250 }}
-                exit={{ opacity: 0, width: 0 }}
-                transition={{ duration: 0.3 }}
-                onSubmit={handleSearchSubmit}
-                className="absolute left-8 top-0 flex items-center bg-darkBg border border-neonBlue rounded overflow-hidden"
+        {/* Search Box */}
+        <AnimatePresence>
+          {searchOpen && (
+            <motion.form
+              initial={{ opacity: 0, width: 0 }}
+              animate={{ opacity: 1, width: 250 }}
+              exit={{ opacity: 0, width: 0 }}
+              transition={{ duration: 0.3 }}
+              onSubmit={handleSearchSubmit}
+              ref={inputRef}
+              className="absolute left-10 top-0 flex items-center bg-darkBg border border-neonBlue rounded overflow-hidden"
+            >
+              <input
+                type="text"
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                placeholder="Search blogs..."
+                className="w-full px-3 py-1 bg-darkBg text-white outline-none"
+                autoFocus
+              />
+              <button
+                type="submit"
+                className="px-3 bg-neonBlue text-darkBg hover:bg-neonPink transition-colors"
               >
-                <input
-                  type="text"
-                  value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
-                  placeholder="Search blogs..."
-                  className="w-full px-3 py-1 bg-darkBg text-white outline-none"
-                  autoFocus
-                />
-                <button
-                  type="submit"
-                  className="px-3 bg-neonBlue text-darkBg hover:bg-neonPink transition-colors"
-                >
-                  Search
-                </button>
-              </motion.form>
-            )}
-          </AnimatePresence>
-        </div>
+                Search
+              </button>
+            </motion.form>
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* Links */}
+      {/* Right Links */}
       <div className="flex gap-6 items-center">
         <motion.div variants={linkVariants} whileHover="hover">
           <Link to="/">Home</Link>
