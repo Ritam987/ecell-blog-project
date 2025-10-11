@@ -23,7 +23,7 @@ const ruleBasedQA = {
 
 const Chatbot = () => {
   const [messages, setMessages] = useState([
-    { type: "bot", text: "Hello! I am your assistant. Click a question below to get guidance." },
+    { type: "bot", text: "Hello! I am Scooby Doo your personal  assistant. Click a question below to get guidance." },
   ]);
   const [visible, setVisible] = useState(false);
   const chatEndRef = useRef(null);
