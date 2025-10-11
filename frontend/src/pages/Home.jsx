@@ -4,9 +4,11 @@ import { getToken, getUser } from "../utils/auth";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import BlogCard from "../components/BlogCard";
+import { FaRobot } from "react-icons/fa"; // Robot icon
 
 const Home = () => {
   const [blogs, setBlogs] = useState([]);
+  const [chatOpen, setChatOpen] = useState(false); // chatbot toggle
   const currentUser = getUser();
   const navigate = useNavigate();
 
@@ -48,9 +50,12 @@ const Home = () => {
     visible: { opacity: 1, y: 0 },
   };
 
+  // Toggle chatbot
+  const toggleChatbot = () => setChatOpen((prev) => !prev);
+
   return (
     <motion.div
-      className="min-h-screen bg-darkBg p-6"
+      className="min-h-screen bg-darkBg p-6 relative"
       initial="hidden"
       animate="visible"
       variants={containerVariants}
@@ -84,6 +89,25 @@ const Home = () => {
           </motion.div>
         ))}
       </div>
+
+      {/* Floating Animated Chatbot Icon */}
+      <motion.div
+        onClick={toggleChatbot}
+        className="fixed bottom-6 right-6 w-16 h-16 bg-neonBlue text-darkBg rounded-full shadow-neon cursor-pointer flex items-center justify-center z-50"
+        whileHover={{ scale: 1.2, rotate: [0, 10, -10, 0] }}
+        animate={{ y: [0, -10, 0, -5, 0] }}
+        transition={{ repeat: Infinity, duration: 2 }}
+      >
+        <FaRobot size={32} />
+      </motion.div>
+
+      {/* You can render your actual chatbot component here */}
+      {chatOpen && (
+        <div className="fixed bottom-24 right-6 w-80 h-96 bg-darkBg border border-neonBlue rounded-xl shadow-neon p-4 z-50">
+          {/* Chatbot UI goes here */}
+          <p className="text-white text-center mt-8">Chatbot Placeholder</p>
+        </div>
+      )}
     </motion.div>
   );
 };
