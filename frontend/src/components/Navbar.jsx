@@ -47,19 +47,20 @@ export default function Navbar() {
 
   return (
     <nav className="fixed top-0 left-0 w-full z-50 bg-darkBg bg-opacity-90 backdrop-blur-md border-b-2 border-neonBlue shadow-neon py-4 px-8 flex justify-between items-center">
-      {/* Left: Logo + Search Icon */}
-      <div className="flex items-center gap-4 relative">
-        <Link
-          to="/"
-          className="font-bold text-2xl text-neonBlue animate-glow flex items-center gap-2"
-        >
-          <img src="/logo.jpg" alt="Logo" className="w-8 h-8 rounded-full" />
-          E-CELL
-        </Link>
+      
+      {/* Left: Logo */}
+      <Link
+        to="/"
+        className="font-bold text-2xl text-neonBlue animate-glow flex items-center gap-2"
+      >
+        <img src="/logo.jpg" alt="Logo" className="w-8 h-8 rounded-full" />
+        E-CELL
+      </Link>
 
-        {/* Search Icon */}
+      {/* Center: Search icon + input */}
+      <div className="relative flex items-center">
         <motion.div
-          className="cursor-pointer text-gray-400 z-50"
+          className="cursor-pointer text-gray-400"
           onClick={() => setSearchOpen((prev) => !prev)}
           whileHover={{
             scale: 1.2,
@@ -80,7 +81,7 @@ export default function Navbar() {
               transition={{ duration: 0.3 }}
               onSubmit={handleSearchSubmit}
               ref={inputRef}
-              className="absolute left-10 top-0 flex items-center bg-darkBg border border-neonBlue rounded overflow-hidden"
+              className="absolute left-8 top-0 flex items-center bg-darkBg border border-neonBlue rounded overflow-hidden"
             >
               <input
                 type="text"
