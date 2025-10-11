@@ -80,12 +80,10 @@ const BlogDetails = () => {
   // Share blog
   const handleShare = async () => {
     try {
-      // Copy link to clipboard
       const blogUrl = window.location.href;
       await navigator.clipboard.writeText(blogUrl);
       alert("Link copied to clipboard!");
 
-      // Increment share count
       const res = await API.post(`/blogs/${id}/share`);
       setBlog(res.data);
     } catch (err) {
@@ -138,8 +136,15 @@ const BlogDetails = () => {
           <div className="flex justify-center mb-4">
             <motion.button
               onClick={handleFollow}
-              whileHover={{ scale: 1.05, boxShadow: "0 0 10px #39ff14" }}
-              className={`px-3 py-1 rounded transition-shadow duration-300 ${
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.9, rotate: -5 }}
+              animate={{
+                boxShadow: blog.followers?.includes(currentUser?._id)
+                  ? ["0 0 5px #39ff14", "0 0 20px #39ff14", "0 0 5px #39ff14"]
+                  : "none",
+              }}
+              transition={{ repeat: blog.followers?.includes(currentUser?._id) ? Infinity : 0, duration: 1.5 }}
+              className={`animated-btn px-3 py-1 rounded transition-shadow duration-300 ${
                 blog.followers?.includes(currentUser?._id)
                   ? "bg-neonGreen text-darkBg shadow-neon"
                   : "bg-gray-700 text-white"
@@ -182,11 +187,16 @@ const BlogDetails = () => {
           </motion.div>
         )}
 
+        {/* Like / Dislike / Share buttons with animation */}
         <motion.div className="mt-4 flex items-center justify-center space-x-4">
           <motion.button
             onClick={handleLike}
-            whileHover={{ scale: 1.05, boxShadow: "0 0 10px #ff00ff" }}
-            className={`px-3 py-1 rounded transition-shadow duration-300 ${
+            whileTap={{ scale: 0.9, rotate: -10 }}
+            animate={{
+              scale: blog.likes?.includes(currentUser?._id) ? [1, 1.2, 1] : 1,
+            }}
+            transition={{ duration: 0.3 }}
+            className={`animated-btn px-3 py-1 rounded transition-shadow duration-300 ${
               blog.likes?.includes(currentUser?._id)
                 ? "bg-neonPink text-darkBg shadow-neon"
                 : "bg-gray-700 text-white"
@@ -197,8 +207,12 @@ const BlogDetails = () => {
 
           <motion.button
             onClick={handleDislike}
-            whileHover={{ scale: 1.05, boxShadow: "0 0 10px #ff0000" }}
-            className={`px-3 py-1 rounded transition-shadow duration-300 ${
+            whileTap={{ scale: 0.9, rotate: 10 }}
+            animate={{
+              scale: blog.dislikes?.includes(currentUser?._id) ? [1, 1.2, 1] : 1,
+            }}
+            transition={{ duration: 0.3 }}
+            className={`animated-btn px-3 py-1 rounded transition-shadow duration-300 ${
               blog.dislikes?.includes(currentUser?._id)
                 ? "bg-red-600 text-darkBg shadow-neon"
                 : "bg-gray-700 text-white"
@@ -209,13 +223,16 @@ const BlogDetails = () => {
 
           <motion.button
             onClick={handleShare}
-            whileHover={{ scale: 1.05, boxShadow: "0 0 10px #00ffff" }}
-            className="px-3 py-1 rounded bg-neonBlue text-darkBg shadow-neon transition-shadow duration-300"
+            whileTap={{ scale: 0.9 }}
+            animate={{ rotate: [0, 10, -10, 0] }}
+            transition={{ duration: 0.5 }}
+            className="animated-btn px-3 py-1 rounded bg-neonBlue text-darkBg shadow-neon transition-shadow duration-300"
           >
             🔗 Share ({blog.shares || 0})
           </motion.button>
         </motion.div>
 
+        {/* Comments Section */}
         <div className="mt-6">
           <h2 className="text-2xl font-semibold text-neonBlue mb-2 text-center">
             Comments
@@ -273,6 +290,7 @@ const BlogDetails = () => {
             border-image-source: linear-gradient(270deg, #ff00ff, #00ffff, #39ff14, #ff00ff);
             animation: borderGradient 6s linear infinite;
           }
+
           @keyframes borderGradient {
             0% { border-image-source: linear-gradient(270deg, #ff00ff, #00ffff, #39ff14, #ff00ff); }
             20% { border-image-source: linear-gradient(270deg, #00ffff, #39ff14, #ff00ff, #00ffff); }
@@ -280,6 +298,27 @@ const BlogDetails = () => {
             60% { border-image-source: linear-gradient(270deg, #ff00ff, #ffbf00, #00ffff, #ff00ff); }
             80% { border-image-source: linear-gradient(270deg, #00ffff, #ff00ff, #39ff14, #00ffff); }
             100% { border-image-source: linear-gradient(270deg, #ff00ff, #00ffff, #39ff14, #ff00ff); }
+          }
+
+          /* Button pulse animation */
+          .animated-btn {
+            position: relative;
+            overflow: hidden;
+          }
+          .animated-btn::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.15);
+            animation: shine 3s infinite;
+          }
+          @keyframes shine {
+            0% { left: -100%; }
+            50% { left: 100%; }
+            100% { left: 100%; }
           }
         `}</style>
       </motion.div>
