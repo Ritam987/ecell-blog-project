@@ -36,13 +36,13 @@ const BlogList = () => {
     }
   };
 
-  // Listen to query parameter for search
+  // Listen to query parameter for search (from navbar)
   useEffect(() => {
     const q = query.get("query") || "";
     setSearchText(q);
   }, [query]);
 
-  // Filter blogs based on searchText
+  // Filter blogs based on searchText (title, author, tags)
   useEffect(() => {
     if (!searchText) {
       setFilteredBlogs(blogs);
@@ -51,6 +51,7 @@ const BlogList = () => {
       const filtered = blogs.filter(
         (blog) =>
           blog.title.toLowerCase().includes(lowerSearch) ||
+          blog.author.name.toLowerCase().includes(lowerSearch) ||
           (blog.tags && blog.tags.some((tag) => tag.toLowerCase().includes(lowerSearch)))
       );
       setFilteredBlogs(filtered);
@@ -63,14 +64,14 @@ const BlogList = () => {
 
   return (
     <div className="max-w-4xl mx-auto mt-10 space-y-6">
-      {/* Search Input inside BlogList for fallback */}
+      {/* Optional Search Input inside BlogList */}
       <div className="mb-6 flex justify-center relative">
         <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-xl pointer-events-none" />
         <input
           type="text"
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
-          placeholder="Search blogs by title or tag..."
+          placeholder="Search blogs by title, author, or tag..."
           className="w-full max-w-md pl-10 border p-2 rounded shadow focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
