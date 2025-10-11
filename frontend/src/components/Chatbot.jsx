@@ -1,6 +1,7 @@
 // src/components/Chatbot.jsx
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLocation } from "react-router-dom"; // ✅ detect route changes
 
 const ruleBasedQA = {
   "User Actions": [
@@ -25,10 +26,18 @@ const Chatbot = () => {
   ]);
   const [visible, setVisible] = useState(false);
   const chatEndRef = useRef(null);
+  const location = useLocation(); // ✅ hook to detect page change
 
+  // scroll to bottom when new message arrives
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // ✅ auto-hide chatbot and reset when route changes
+  useEffect(() => {
+    setVisible(false);
+    setMessages([{ type: "bot", text: "Hello! I am your assistant. Click a question below to get guidance." }]);
+  }, [location.pathname]);
 
   const handleQuestionClick = (qa) => {
     setMessages((prev) => [
