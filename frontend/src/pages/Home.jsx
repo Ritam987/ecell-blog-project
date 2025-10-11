@@ -3,12 +3,12 @@ import API from "../utils/api";
 import { getToken, getUser } from "../utils/auth";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import BlogCard from "../components/BlogCard";
 import { FaRobot } from "react-icons/fa"; // cute robot icon
+import BlogCard from "../components/BlogCard";
 
 const Home = () => {
   const [blogs, setBlogs] = useState([]);
-  const [chatOpen, setChatOpen] = useState(false); // chatbot state
+  const [chatOpen, setChatOpen] = useState(false); // chatbot toggle
   const currentUser = getUser();
   const navigate = useNavigate();
 
@@ -91,16 +91,15 @@ const Home = () => {
         className="fixed bottom-8 right-8 w-16 h-16 bg-neonPink rounded-full shadow-neon flex items-center justify-center cursor-pointer z-50"
         animate={{ y: [0, -10, 0] }} // floating animation
         transition={{ repeat: Infinity, duration: 2 }}
-        whileHover={{ scale: 1.2, rotate: [0, 15, -15, 0] }}
+        whileHover={{ scale: 1.2, rotate: [0, 15, -15, 0] }} // playful hover
       >
         <FaRobot size={32} color="#0ff" />
       </motion.div>
 
-      {/* Chatbot panel (remains as before) */}
+      {/* Chatbot Panel */}
       {chatOpen && (
         <div className="fixed bottom-24 right-8 w-80 h-96 bg-darkBg rounded-xl shadow-neon p-4 z-50">
-          {/* Existing chatbot code goes here */}
-          {/* Example placeholder */}
+          {/* Your existing chatbot component goes here */}
           <p className="text-white">Chatbot is ready to help you!</p>
         </div>
       )}
