@@ -254,9 +254,9 @@ router.post("/:id/follow", auth, async (req, res) => {
 });
 
 // routes/blogs.js
-const express = require("express");
-const router = express.Router();
-const Blog = require("../models/Blog");
+
+
+
 
 // GET /blogs/search?q=keyword
 router.get("/search", async (req, res) => {
@@ -313,6 +313,7 @@ router.get("/:id/comments", async (req, res) => {
 });
 
 module.exports = router;
+
 
 
 
