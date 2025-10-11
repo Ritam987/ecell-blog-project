@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import API from "../utils/api";
 import { getToken } from "../utils/auth";
 import { Link } from "react-router-dom";
+import { FiSearch } from "react-icons/fi"; // search icon
 
 const BlogList = () => {
   const [blogs, setBlogs] = useState([]);
@@ -51,14 +52,15 @@ const BlogList = () => {
 
   return (
     <div className="max-w-4xl mx-auto mt-10 space-y-6">
-      {/* Search Input */}
-      <div className="mb-6 flex justify-center">
+      {/* Search Input with Icon */}
+      <div className="mb-6 flex justify-center items-center relative">
+        <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-xl pointer-events-none" />
         <input
           type="text"
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
           placeholder="Search blogs by title or tag..."
-          className="w-full max-w-md border p-2 rounded shadow focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full max-w-md pl-10 border p-2 rounded shadow focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
 
