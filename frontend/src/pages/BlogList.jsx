@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import API from "../utils/api";
 import { getToken } from "../utils/auth";
 import { Link, useLocation } from "react-router-dom";
-import { FiSearch } from "react-icons/fi";
 
 function useQuery() {
   return new URLSearchParams(useLocation().search);
@@ -11,14 +10,12 @@ function useQuery() {
 const BlogList = () => {
   const [blogs, setBlogs] = useState([]);
   const [filteredBlogs, setFilteredBlogs] = useState([]);
-  const [searchText, setSearchText] = useState("");
   const query = useQuery();
 
   const fetchBlogs = async () => {
     try {
       const res = await API.get("/blogs");
       setBlogs(res.data);
-      setFilteredBlogs(res.data);
     } catch (err) {
       console.error("Error fetching blogs:", err.response || err);
       alert("Failed to fetch blogs");
@@ -36,14 +33,13 @@ const BlogList = () => {
     }
   };
 
-  // Listen to query parameter for search (from navbar)
-  useEffect(() => {
-    const q = query.get("query") || "";
-    setSearchText(q);
-  }, [query]);
+  // Listen to query parameter for search
+  const searchText = query.get("query") || "";
 
-  // Filter blogs based on searchText (title, author, tags)
+  // Filter blogs whenever blogs or searchText changes
   useEffect(() => {
+    if (!blogs.length) return;
+
     if (!searchText) {
       setFilteredBlogs(blogs);
     } else {
@@ -52,11 +48,12 @@ const BlogList = () => {
         (blog) =>
           blog.title.toLowerCase().includes(lowerSearch) ||
           blog.author.name.toLowerCase().includes(lowerSearch) ||
-          (blog.tags && blog.tags.some((tag) => tag.toLowerCase().includes(lowerSearch)))
+          (blog.tags &&
+            blog.tags.some((tag) => tag.toLowerCase().includes(lowerSearch)))
       );
       setFilteredBlogs(filtered);
     }
-  }, [searchText, blogs]);
+  }, [blogs, searchText]);
 
   useEffect(() => {
     fetchBlogs();
@@ -64,18 +61,6 @@ const BlogList = () => {
 
   return (
     <div className="max-w-4xl mx-auto mt-10 space-y-6">
-      {/* Optional Search Input inside BlogList */}
-      <div className="mb-6 flex justify-center relative">
-        <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-xl pointer-events-none" />
-        <input
-          type="text"
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
-          placeholder="Search blogs by title, author, or tag..."
-          className="w-full max-w-md pl-10 border p-2 rounded shadow focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
-
       {filteredBlogs.length === 0 && (
         <p className="text-center text-gray-500">
           No blogs found matching your search.
