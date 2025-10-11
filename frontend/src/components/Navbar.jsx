@@ -24,18 +24,13 @@ export default function Navbar() {
 
   return (
     <nav className="fixed top-0 left-0 w-full z-50 bg-darkBg bg-opacity-90 backdrop-blur-md border-b-2 border-neonBlue shadow-neon py-4 px-8 flex justify-between items-center">
-      {/* Left: Logo */}
-      <div className="flex items-center gap-4">
-        <Link
-          to="/"
-          className="font-bold text-2xl text-neonBlue animate-glow flex items-center gap-2"
-        >
-          <img src="/logo.jpg" alt="Logo" className="w-8 h-8 rounded-full" />
-          E-CELL
-        </Link>
-      </div>
+      {/* Logo */}
+      <Link to="/" className="font-bold text-2xl text-neonBlue animate-glow flex items-center gap-2">
+        <img src="/logo.jpg" alt="Logo" className="w-8 h-8 rounded-full" />
+        E-CELL
+      </Link>
 
-      {/* Right Links */}
+      {/* Links */}
       <div className="flex gap-6 items-center">
         <motion.div variants={linkVariants} whileHover="hover">
           <Link to="/">Home</Link>
@@ -80,7 +75,9 @@ export default function Navbar() {
           0%, 100% { text-shadow: 0 0 5px #0ff, 0 0 10px #0ff, 0 0 20px #0ff; }
           50% { text-shadow: 0 0 15px #0ff, 0 0 25px #ff00ff, 0 0 35px #39ff14; }
         }
-        .animate-glow { animation: neonGlow 1.5s infinite alternate; }
+        .animate-glow {
+          animation: neonGlow 1.5s infinite alternate;
+        }
       `}</style>
     </nav>
   );
