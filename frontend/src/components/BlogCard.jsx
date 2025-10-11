@@ -8,7 +8,7 @@ const BlogCard = ({ blog }) => {
 
   return (
     <motion.div
-      className="bg-darkBg rounded-2xl shadow-neon border border-neonBlue p-4 hover:shadow-neon-lg transition-all duration-300 cursor-pointer"
+      className="bg-darkBg rounded-2xl shadow-neon border border-neonBlue p-4 transition-all duration-300 cursor-pointer"
       whileHover={{ scale: 1.03 }}
       onClick={() => navigate(`/blog/${blog._id}`)}
     >
@@ -20,35 +20,41 @@ const BlogCard = ({ blog }) => {
         />
       )}
 
-      {/* Title with smooth hover glow */}
       <h2 className="blog-title text-2xl font-bold text-neonBlue mb-2 text-center">
         {blog.title}
       </h2>
 
       <p className="text-graySoft text-center line-clamp-3">{blog.content}</p>
 
-      {/* Smooth fade in/out neon animation */}
       <style jsx>{`
         .blog-title {
           text-shadow: 0 0 5px #00ffff;
           transition: 
-            text-shadow 0.6s ease-in-out,
-            color 0.6s ease-in-out,
+            text-shadow 0.6s ease,
+            color 0.6s ease,
             transform 0.4s ease;
         }
 
+        /* Hover glow */
         .blog-title:hover {
           color: #39ff14;
-          transform: scale(1.03);
-          animation: glowPulse 1.5s ease-in-out infinite alternate;
+          transform: scale(1.05);
+          text-shadow: 0 0 10px #00ffff, 0 0 20px #39ff14, 0 0 30px #ff00ff;
         }
 
-        @keyframes glowPulse {
-          0% {
-            text-shadow: 0 0 8px #00ffff, 0 0 15px #39ff14, 0 0 25px #ff00ff;
+        /* Smooth fade-out after hover */
+        .blog-title:not(:hover) {
+          animation: fadeOutGlow 0.8s ease forwards;
+        }
+
+        @keyframes fadeOutGlow {
+          from {
+            text-shadow: 0 0 20px #ff00ff, 0 0 30px #39ff14, 0 0 50px #00ffff;
+            color: #39ff14;
           }
-          100% {
-            text-shadow: 0 0 20px #ff00ff, 0 0 35px #00ffff, 0 0 50px #39ff14;
+          to {
+            text-shadow: 0 0 5px #00ffff;
+            color: #00ffff;
           }
         }
       `}</style>
