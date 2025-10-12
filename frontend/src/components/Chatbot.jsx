@@ -1,16 +1,13 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "react-router-dom";
-import { Send, Bot } from 'lucide-react'; 
+import { Send, Bot } from "lucide-react";
 
 // --- START OF CONFIGURATION ---
-// *** ABSOLUTE URL FIX APPLIED HERE: Using the full URL as requested. ***
-const CHAT_PROXY_URL = "https://ecell-blog-project.onrender.com/api/generate"; 
-
-// Custom theme colors for React styles
-const NEON_BLUE = 'rgb(57, 255, 20)'; 
-const NEON_PINK = '#ff00ff';
-const DARK_BG = 'rgb(10, 10, 10)'; 
+const CHAT_PROXY_URL = "https://ecell-blog-project.onrender.com/api/generate"; // ✅ Your backend endpoint
+const NEON_BLUE = "rgb(57, 255, 20)";
+const NEON_PINK = "#ff00ff";
+const DARK_BG = "rgb(10, 10, 10)";
 // --- END OF CONFIGURATION ---
 
 const ruleBasedQA = {
@@ -27,37 +24,46 @@ const ruleBasedQA = {
   ],
   "General Information": [
     { question: "How to access admin panel?", answer: "If your account has admin rights, click on 'Admin Panel' in the navbar to manage users and blogs." },
-    { question: "Who are you?", answer: "I am Scooby Doo, your helpful AI assistant, powered by the OpenRouter AI service." }
+    { question: "Who are you?", answer: "I am Scooby Doo, your helpful AI assistant, powered by the OpenRouter AI service." },
   ],
 };
 
 const Chatbot = () => {
   const [messages, setMessages] = useState([
-    { type: "bot", text: "Hello! I am Scooby Doo, your personal assistant. Click a question below for instant answers, or use the input box to ask our **OpenRouter AI** any general question." },
+    {
+      type: "bot",
+      text: "Hello! I am Scooby Doo, your personal assistant. Click a question below for instant answers, or use the input box to ask our **OpenRouter AI** any general question.",
+    },
   ]);
   const [visible, setVisible] = useState(false);
   const [inputText, setInputText] = useState("");
-  const [isProcessing, setIsProcessing] = useState(false); 
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const chatEndRef = useRef(null);
   const location = useLocation();
-    
+
   // Scroll to bottom when new message arrives
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isProcessing]);
 
-  // Auto-hide chatbot and reset when route changes
+  // Reset chatbot when route changes
   useEffect(() => {
     setVisible(false);
-    setMessages([{ type: "bot", text: "Hello! I am Scooby Doo, your personal assistant. Click a question below for instant answers, or use the input box to ask our **OpenRouter AI** any general question." }]);
+    setMessages([
+      {
+        type: "bot",
+        text: "Hello! I am Scooby Doo, your personal assistant. Click a question below for instant answers, or use the input box to ask our **OpenRouter AI** any general question.",
+      },
+    ]);
   }, [location.pathname]);
 
   // --- Utility Functions ---
-
   const getRuleBasedAnswer = useCallback((question) => {
     const categories = Object.values(ruleBasedQA).flat();
-    const match = categories.find(qa => qa.question.toLowerCase().trim() === question.toLowerCase().trim());
+    const match = categories.find(
+      (qa) => qa.question.toLowerCase().trim() === question.toLowerCase().trim()
+    );
     return match ? match.answer : null;
   }, []);
 
@@ -70,98 +76,91 @@ const Chatbot = () => {
       ]);
     }
   };
-    
-  // --- API Call Handler (OpenRouter Chat) ---
 
+  // --- FIXED AI MESSAGE HANDLER ---
   const sendMessage = async (text) => {
     const query = text.trim();
 
-    // 1. Check for Rule-Based Answer first
+    // 1. Check for rule-based response
     const ruleAnswer = getRuleBasedAnswer(query);
     if (ruleAnswer) {
-      setMessages(prev => [...prev, { type: "user", text: query }]);
-      setMessages(prev => [...prev, { type: "bot", text: ruleAnswer }]);
+      setMessages((prev) => [
+        ...prev,
+        { type: "user", text: query },
+        { type: "bot", text: ruleAnswer },
+      ]);
       setInputText("");
       return;
     }
-        
-    // 2. If no rule-based match, send to AI chat
-    setMessages(prev => [...prev, { type: "user", text: query }]);
+
+    // 2. Send to backend
+    setMessages((prev) => [...prev, { type: "user", text: query }]);
     setInputText("");
-    setIsProcessing(true); 
-        
+    setIsProcessing(true);
+
     try {
-      // FIX: Backend expects 'prompt' key for the input message.
-      const apiPayload = {
-        prompt: query, 
-      };
-            
+      const apiPayload = { prompt: query };
+
       const res = await fetch(CHAT_PROXY_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(apiPayload)
+        body: JSON.stringify(apiPayload),
       });
-            
-      // --- CRITICAL FIX: Safely read response as text first to handle non-JSON server errors ---
-      let responseText = await res.text();
-      let data = {};
-            
-      try {
-        // Attempt to parse the text as JSON
-        data = JSON.parse(responseText);
-      } catch (e) {
-        // If parsing fails, log the error and inform the user.
-        console.error("Server sent non-JSON response:", responseText);
-        setMessages(prev => [...prev, { 
-            type: "bot", 
-            text: `Error: The server sent an invalid response (HTTP ${res.status}). This often means the backend service is down or crashed. Content received: "${responseText.substring(0, 100)}..."` 
-        }]);
-        return; 
-      }
-      // --- END SAFE PARSING ---
-            
-      // FIX: Backend returns 'content' key for the reply.
-      const botReply = data.content; 
-      
-      if (res.ok && botReply) {
-        // Successful response path
-        setMessages(prev => [...prev, { type: "bot", text: botReply }]);
+
+      const contentType = res.headers.get("content-type");
+      let botReply = "";
+
+      if (contentType && contentType.includes("application/json")) {
+        // ✅ JSON backend
+        const data = await res.json();
+        botReply = data.content || data.message || JSON.stringify(data);
       } else {
-        // Handle server-returned JSON error (e.g., 400, 500 status with JSON body)
-        const errorText = data.error || data.details || 'AI Chat returned an unexpected error or empty response.';
-        const statusMessage = `AI Service Error (Status ${res.status}):`;
-
-        setMessages(prev => [...prev, { type: "bot", text: `${statusMessage} ${errorText}. Please check the server logs for API key or network issues.` }]);
-        console.error("Chatbot API Error (Backend JSON):", errorText);
+        // ✅ Plain text or fallback
+        botReply = await res.text();
+        if (!botReply.trim()) {
+          botReply = `⚠️ Empty response received (HTTP ${res.status}).`;
+        }
       }
 
+      if (res.ok) {
+        setMessages((prev) => [...prev, { type: "bot", text: botReply }]);
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          { type: "bot", text: `⚠️ Server Error (Status ${res.status}): ${botReply}` },
+        ]);
+      }
     } catch (err) {
-      setMessages(prev => [...prev, { type: "bot", text: `Network Error: Could not connect to the chat service. Check your network connection.` }]);
       console.error("Chatbot fetch error:", err);
+      setMessages((prev) => [
+        ...prev,
+        { type: "bot", text: "❌ Network Error: Unable to connect to chat service." },
+      ]);
     } finally {
-      setIsProcessing(false); 
+      setIsProcessing(false);
     }
   };
 
-  // Handles Enter key press
+  // Handle Enter key
   const handleInputSubmit = (e) => {
     if (e.key === "Enter" && inputText.trim() && !isProcessing) {
-        sendMessage(inputText);
+      sendMessage(inputText);
     }
   };
 
+  // --- UI ---
   return (
     <div className="fixed bottom-4 right-4 flex flex-col items-end z-50 font-sans">
-      {/* Floating Animated Robot Icon */}
+      {/* Floating Bot Icon */}
       <motion.div
         className="mb-2 bg-neonBlue text-white p-3 rounded-full shadow-lg cursor-pointer flex items-center justify-center"
         style={{
-            '--neon-color': NEON_BLUE, 
-            backgroundColor: NEON_BLUE,
-            boxShadow: `0 0 15px var(--neon-color)`
+          "--neon-color": NEON_BLUE,
+          backgroundColor: NEON_BLUE,
+          boxShadow: `0 0 15px var(--neon-color)`,
         }}
         onClick={() => setVisible(!visible)}
-        animate={{ y: [0, -10, 0] }} // floating effect
+        animate={{ y: [0, -10, 0] }}
         transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
         whileHover={{ scale: 1.2, boxShadow: `0 0 20px ${NEON_BLUE}` }}
         whileTap={{ scale: 0.95 }}
@@ -169,16 +168,16 @@ const Chatbot = () => {
         <Bot size={28} />
       </motion.div>
 
-      {/* Chatbox */}
+      {/* Chat Window */}
       <AnimatePresence>
         {visible && (
           <motion.div
             className="w-80 max-w-full rounded-lg flex flex-col overflow-hidden text-gray-100"
-            style={{ 
-              backgroundColor: DARK_BG, 
+            style={{
+              backgroundColor: DARK_BG,
               border: `2px solid ${NEON_BLUE}`,
               boxShadow: `0 0 20px ${NEON_BLUE}`,
-              minHeight: '450px'
+              minHeight: "450px",
             }}
             initial={{ opacity: 0, y: 20, x: 20 }}
             animate={{ opacity: 1, y: 0, x: 0 }}
@@ -186,22 +185,21 @@ const Chatbot = () => {
             transition={{ duration: 0.3 }}
           >
             {/* Header */}
-            <div 
-              className={`px-4 py-3 font-extrabold text-lg flex justify-between items-center`}
+            <div
+              className="px-4 py-3 font-extrabold text-lg flex justify-between items-center"
               style={{ backgroundColor: NEON_BLUE, color: DARK_BG, boxShadow: `0 0 10px ${NEON_BLUE}` }}
             >
               <span>Scooby Doo Assistant</span>
-              <button 
-                onClick={() => setVisible(false)} 
+              <button
+                onClick={() => setVisible(false)}
                 className="text-xl font-bold hover:text-gray-700 transition-colors"
               >
                 &times;
               </button>
             </div>
-            
-            {/* Message Display Area */}
+
+            {/* Messages */}
             <div className="flex-1 p-3 overflow-y-auto custom-scrollbar space-y-3" style={{ maxHeight: "300px" }}>
-              
               {messages.map((msg, idx) => (
                 <motion.div
                   key={idx}
@@ -217,8 +215,8 @@ const Chatbot = () => {
                   {msg.text}
                 </motion.div>
               ))}
-              
-              {/* Loading/Typing Indicator */}
+
+              {/* Typing Indicator */}
               <AnimatePresence>
                 {isProcessing && (
                   <motion.div
@@ -226,59 +224,61 @@ const Chatbot = () => {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     className="flex mr-auto items-center p-3 rounded-xl text-xs"
-                    style={{ backgroundColor: NEON_BLUE, color: DARK_BG, maxWidth: '150px' }}
+                    style={{ backgroundColor: NEON_BLUE, color: DARK_BG, maxWidth: "150px" }}
                   >
-                    <span className="animate-pulse font-semibold">
-                        Assistant is typing...
-                    </span>
+                    <span className="animate-pulse font-semibold">Assistant is typing...</span>
                   </motion.div>
                 )}
               </AnimatePresence>
-              
+
               <div ref={chatEndRef} />
             </div>
 
-            {/* Input and Send Button */}
+            {/* Input */}
             <div className="p-3 border-t border-gray-700 flex gap-2">
-                <input
-                    type="text"
-                    value={inputText}
-                    onChange={(e) => setInputText(e.target.value)}
-                    onKeyDown={handleInputSubmit}
-                    placeholder={isProcessing ? "Waiting for response..." : "Ask a question or enter a topic..."}
-                    disabled={isProcessing}
-                    className={`flex-1 px-3 py-2 rounded-full text-white outline-none transition-all duration-300 placeholder-gray-500 text-sm`}
-                    style={{ 
-                        backgroundColor: 'rgba(50, 50, 50, 0.5)',
-                        border: `1px solid ${NEON_BLUE}`,
-                        boxShadow: `0 0 5px ${NEON_BLUE}`
-                    }}
-                />
-                <motion.button
-                    onClick={() => sendMessage(inputText)}
-                    disabled={!inputText.trim() || isProcessing}
-                    whileHover={{ scale: (!inputText.trim() || isProcessing) ? 1 : 1.05 }}
-                    whileTap={{ scale: (!inputText.trim() || isProcessing) ? 1 : 0.95 }}
-                    className={`px-3 py-2 rounded-full font-semibold transition-colors duration-200 text-xs flex items-center ${
-                          (!inputText.trim() || isProcessing) ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
-                    style={{
-                        backgroundColor: NEON_BLUE,
-                        color: DARK_BG,
-                        boxShadow: `0 0 10px ${NEON_BLUE}`
-                    }}
-                >
-                    <Send size={16} className="mr-1" />
-                    Chat
-                </motion.button>
+              <input
+                type="text"
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                onKeyDown={handleInputSubmit}
+                placeholder={isProcessing ? "Waiting for response..." : "Ask a question or enter a topic..."}
+                disabled={isProcessing}
+                className="flex-1 px-3 py-2 rounded-full text-white outline-none transition-all duration-300 placeholder-gray-500 text-sm"
+                style={{
+                  backgroundColor: "rgba(50, 50, 50, 0.5)",
+                  border: `1px solid ${NEON_BLUE}`,
+                  boxShadow: `0 0 5px ${NEON_BLUE}`,
+                }}
+              />
+              <motion.button
+                onClick={() => sendMessage(inputText)}
+                disabled={!inputText.trim() || isProcessing}
+                whileHover={{ scale: !inputText.trim() || isProcessing ? 1 : 1.05 }}
+                whileTap={{ scale: !inputText.trim() || isProcessing ? 1 : 0.95 }}
+                className={`px-3 py-2 rounded-full font-semibold transition-colors duration-200 text-xs flex items-center ${
+                  !inputText.trim() || isProcessing ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+                style={{
+                  backgroundColor: NEON_BLUE,
+                  color: DARK_BG,
+                  boxShadow: `0 0 10px ${NEON_BLUE}`,
+                }}
+              >
+                <Send size={16} className="mr-1" />
+                Chat
+              </motion.button>
             </div>
 
-            {/* Categorized Questions/Suggestions */}
+            {/* Suggested Topics */}
             <div className="p-3 border-t border-gray-700 flex flex-col gap-3">
-              <div className="font-semibold" style={{ color: NEON_BLUE }}>Suggested Topics (Instant Answer):</div>
+              <div className="font-semibold" style={{ color: NEON_BLUE }}>
+                Suggested Topics (Instant Answer):
+              </div>
               {Object.entries(ruleBasedQA).map(([category, qas], idx) => (
                 <div key={idx} className="border-t border-gray-800 pt-2 first:border-t-0 first:pt-0">
-                  <div className="font-bold text-white mb-1 text-sm" style={{ color: NEON_PINK }}>{category}</div>
+                  <div className="font-bold text-white mb-1 text-sm" style={{ color: NEON_PINK }}>
+                    {category}
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     {qas.map((qa, i) => (
                       <motion.button
@@ -288,11 +288,9 @@ const Chatbot = () => {
                         whileHover={{ scale: isProcessing ? 1 : 1.05 }}
                         whileTap={{ scale: isProcessing ? 1 : 0.98 }}
                         className={`text-xs px-2 py-1 rounded-full border border-gray-600 transition-all duration-300 ${
-                            isProcessing 
-                                ? "bg-gray-800 text-gray-500 cursor-not-allowed opacity-50" 
-                                : "bg-gray-700 hover:bg-gray-600"
+                          isProcessing ? "bg-gray-800 text-gray-500 cursor-not-allowed opacity-50" : "bg-gray-700 hover:bg-gray-600"
                         }`}
-                        style={{ color: NEON_BLUE, boxShadow: isProcessing ? 'none' : `0 0 5px ${NEON_BLUE}` }}
+                        style={{ color: NEON_BLUE, boxShadow: isProcessing ? "none" : `0 0 5px ${NEON_BLUE}` }}
                       >
                         {qa.question}
                       </motion.button>
@@ -302,7 +300,7 @@ const Chatbot = () => {
               ))}
             </div>
 
-            {/* Custom scrollbar and theme classes */}
+            {/* Custom Scrollbar */}
             <style>{`
               .custom-scrollbar::-webkit-scrollbar { width: 6px; }
               .custom-scrollbar::-webkit-scrollbar-track { background: ${DARK_BG}; border-radius: 4px; }
