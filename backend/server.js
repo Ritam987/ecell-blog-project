@@ -26,7 +26,7 @@ const userRoutes = require("./routes/users");
 // 1. Import the external Chatbot Router.
 // Note: We use require("./routes/chatbot") which will correctly load the .ts file
 // if your setup uses ts-node or a compilation step.
-const chatbotRoutes = require("../routes/chatbot"); 
+const chatbotRoutes = require("../routes/chatbot.ts"); 
 // --- END CHATBOT INTEGRATION ---
 
 // Removed: All code related to OPENROUTER_API_KEY configuration and the huge 
@@ -60,4 +60,5 @@ app.get("/", (req, res) => res.send("E-Cell Blogging Backend is running!"));
 // Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
 
