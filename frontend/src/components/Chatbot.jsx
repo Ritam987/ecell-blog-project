@@ -109,7 +109,7 @@ const Chatbot = () => {
         body: JSON.stringify(apiPayload)
       });
       
-      // --- FIX: Safely read response as text first to handle non-JSON server errors ---
+      // --- IMPORTANT: Safely read response as text first to handle non-JSON server errors ---
       let responseText = await res.text();
       let data = {};
       
@@ -121,19 +121,25 @@ const Chatbot = () => {
         console.error("Server sent non-JSON response:", responseText);
         setMessages(prev => [...prev, { 
             type: "bot", 
+            // Displaying the HTTP status is crucial here
             text: `Error: The server sent an invalid response (HTTP ${res.status}). This often means the backend service is down or crashed. Content received: "${responseText.substring(0, 100)}..."` 
         }]);
         return; // Exit the function after logging the error
       }
-      // --- END FIX ---
+      // --- END SAFE PARSING ---
       
       if (res.ok && data.reply) {
+        // Successful response path
         setMessages(prev => [...prev, { type: "bot", text: data.reply }]);
       } else {
-        // Handle server-returned JSON error (e.g., 400, 500 status with JSON body)
-        const errorText = data.error || data.details || 'AI Chat returned an error or empty response.';
-        setMessages(prev => [...prev, { type: "bot", text: `AI Service Error: ${errorText}. Please check the server logs for API key or network issues.` }]);
-        console.error("OpenRouter Error:", errorText);
+        // Handle server-returned JSON error (e.g., 400, 500 status with JSON body or 200 with bad content)
+        const errorText = data.error || data.details || 'AI Chat returned an unexpected error or empty response.';
+        
+        // Use the status code from the response for clarity
+        const statusMessage = `AI Service Error (Status ${res.status}):`;
+
+        setMessages(prev => [...prev, { type: "bot", text: `${statusMessage} ${errorText}. Please check the server logs for API key or network issues.` }]);
+        console.error("Chatbot API Error (Backend JSON):", errorText);
       }
 
     } catch (err) {
@@ -178,7 +184,7 @@ const Chatbot = () => {
             style={{ 
               backgroundColor: DARK_BG, 
               border: `2px solid ${NEON_BLUE}`,
-              boxBoxShadow: `0 0 20px ${NEON_BLUE}`,
+              boxShadow: `0 0 20px ${NEON_BLUE}`,
               minHeight: '450px'
             }}
             initial={{ opacity: 0, y: 20, x: 20 }}
