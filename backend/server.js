@@ -4,6 +4,7 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const path = require("path");
 const { GridFSBucket } = require("mongodb");
+const chatbotRoutes = require("./routes/chatbot");
 
 dotenv.config();
 const app = express();
@@ -24,6 +25,7 @@ const userRoutes = require("./routes/users");
 app.use("/api/auth", authRoutes);
 app.use("/api/blogs", blogRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/chatbot", chatbotRoutes);
 
 
 // MongoDB connection
@@ -47,4 +49,5 @@ app.get("/", (req, res) => res.send("E-Cell Blogging Backend is running!"));
 // Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
 
