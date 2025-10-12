@@ -1,28 +1,25 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "react-router-dom";
-import { FaRobot } from "react-icons/fa"; 
-import { Copy, Sparkles, Send } from 'lucide-react'; // Added for new features
+import { Send, Bot } from 'lucide-react'; // Using 'Bot' from lucide-react
 
 // --- START OF CONFIGURATION (API Endpoints & Details) ---
-// OpenRouter Chat Proxy (General Q&A, uses your existing backend route)
+// OpenRouter Chat Proxy (General Q&A)
 const CHAT_PROXY_URL = "/api/chatbot"; 
-// Gemini Draft Generation Proxy (Requires new backend route: routes/blogDraft.ts)
-const BLOG_DRAFT_URL = "/api/blog-draft-generator"; 
 
 // Details passed to the proxy server
 const OPENROUTER_MODEL = "openai/gpt-oss-20b:free"; 
 const APP_REFERER = 'https://ecell-blog-project.onrender.com'; 
 const APP_TITLE = "E-Cell Blog Assistant";
 
-// Custom theme colors for React styles (matching your existing CSS intent)
+// Custom theme colors for React styles
 const NEON_BLUE = 'rgb(57, 255, 20)'; 
-const NEON_PINK = '#ff00ff';
+const NEON_PINK = '#ff00ff'; // Keeping pink for highlight/accents
 const DARK_BG = 'rgb(10, 10, 10)'; 
 // --- END OF CONFIGURATION ---
 
 const ruleBasedQA = {
-  "User Actions": [
+  "User Actions (How-to)": [
     { question: "How to login?", answer: "Click on the Login button in the navbar and enter your credentials." },
     { question: "How to register?", answer: "Click on Register, fill in the details, and submit." },
     { question: "How to logout?", answer: "Click on your profile and select Logout." },
@@ -33,69 +30,44 @@ const ruleBasedQA = {
     { question: "How can I like a blog?", answer: "On any blog page or blog card, click the 'Like' button to like or unlike a blog." },
     { question: "How can I comment on a blog?", answer: "Go to the blog details page, type your comment in the comment box, and click 'Submit'." },
   ],
-  "Admin Actions": [
+  "General Information": [
     { question: "How to access admin panel?", answer: "If your account has admin rights, click on 'Admin Panel' in the navbar to manage users and blogs." },
+    { question: "Who are you?", answer: "I am Scooby Doo, your helpful AI assistant, powered by the OpenRouter AI service." }
   ],
 };
 
 const Chatbot = () => {
   const [messages, setMessages] = useState([
-    { type: "bot", text: "Hello! I am Scooby Doo, your personal assistant. Click a question below, or use the input box to ask an **LLM** any other question, or generate a **blog draft**." },
+    { type: "bot", text: "Hello! I am Scooby Doo, your personal assistant. Click a question below for instant answers, or use the input box to ask our **OpenRouter AI** any general question." },
   ]);
   const [visible, setVisible] = useState(false);
   const [inputText, setInputText] = useState("");
   const [isProcessing, setIsProcessing] = useState(false); // For OpenRouter Chat
-  const [blogDraft, setBlogDraft] = useState(null); // State for Gemini-generated draft
-  const [isGeneratingDraft, setIsGeneratingDraft] = useState(false); // For Gemini Draft loading
 
   const chatEndRef = useRef(null);
-  const draftRef = useRef(null);
   const location = useLocation();
   
   // scroll to bottom when new message arrives
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isProcessing, isGeneratingDraft]);
-
-  // scroll to draft area when draft is generated
-  useEffect(() => {
-    if (blogDraft) {
-        draftRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, [blogDraft]);
+  }, [messages, isProcessing]);
 
   // auto-hide chatbot and reset when route changes
   useEffect(() => {
     setVisible(false);
-    setMessages([{ type: "bot", text: "Hello! I am Scooby Doo, your personal assistant. Click a question below, or use the input box to ask an **LLM** any other question, or generate a **blog draft**." }]);
-    setBlogDraft(null);
+    setMessages([{ type: "bot", text: "Hello! I am Scooby Doo, your personal assistant. Click a question below for instant answers, or use the input box to ask our **OpenRouter AI** any general question." }]);
   }, [location.pathname]);
 
   // --- Utility Functions ---
 
   const getRuleBasedAnswer = useCallback((question) => {
     const categories = Object.values(ruleBasedQA).flat();
-    const match = categories.find(qa => qa.question.toLowerCase() === question.toLowerCase());
+    const match = categories.find(qa => qa.question.toLowerCase().trim() === question.toLowerCase().trim());
     return match ? match.answer : null;
   }, []);
 
-  const handleCopyToClipboard = (text) => {
-    try {
-      // Use document.execCommand('copy') for better iframe compatibility
-      const tempTextArea = document.createElement('textarea');
-      tempTextArea.value = text;
-      document.body.appendChild(tempTextArea);
-      tempTextArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(tempTextArea);
-      setMessages(prev => [...prev, { type: "bot", text: "✅ Draft copied to clipboard!" }]);
-    } catch (err) {
-      setMessages(prev => [...prev, { type: "bot", text: "❌ Failed to copy draft. Please copy manually." }]);
-    }
-  };
-
   const handleQuestionClick = (qa) => {
-    if (!isProcessing && !isGeneratingDraft) {
+    if (!isProcessing) {
       setMessages((prev) => [
         ...prev,
         { type: "user", text: qa.question },
@@ -104,26 +76,28 @@ const Chatbot = () => {
     }
   };
   
-  // --- API Call Handlers ---
+  // --- API Call Handler (OpenRouter Chat) ---
 
-  // Handler for OpenRouter (General Chat)
   const sendMessage = async (text) => {
-    setBlogDraft(null);
-    const ruleAnswer = getRuleBasedAnswer(text);
+    const query = text.trim();
+
+    // 1. Check for Rule-Based Answer first
+    const ruleAnswer = getRuleBasedAnswer(query);
     if (ruleAnswer) {
-      setMessages(prev => [...prev, { type: "user", text }]);
+      setMessages(prev => [...prev, { type: "user", text: query }]);
       setMessages(prev => [...prev, { type: "bot", text: ruleAnswer }]);
       setInputText("");
       return;
     }
     
-    setMessages(prev => [...prev, { type: "user", text }]);
+    // 2. If no rule-based match, send to AI chat
+    setMessages(prev => [...prev, { type: "user", text: query }]);
     setInputText("");
     setIsProcessing(true); 
     
     try {
       const apiPayload = {
-        message: text,
+        message: query,
         model: OPENROUTER_MODEL, 
         referer: APP_REFERER,
         title: APP_TITLE,
@@ -141,7 +115,7 @@ const Chatbot = () => {
         setMessages(prev => [...prev, { type: "bot", text: data.reply }]);
       } else {
         const errorText = data.error || data.details || 'AI Chat returned an error or empty response.';
-        setMessages(prev => [...prev, { type: "bot", text: `Error: ${errorText}` }]);
+        setMessages(prev => [...prev, { type: "bot", text: `Error: ${errorText}. Please check the server logs.` }]);
         console.error("OpenRouter Error:", errorText);
       }
 
@@ -153,52 +127,9 @@ const Chatbot = () => {
     }
   };
 
-  // Handler for Gemini (Draft Generation)
-  const generateBlogDraft = async () => {
-    if (!inputText.trim()) {
-        setMessages(prev => [...prev, { type: "bot", text: "Please enter a topic to generate a blog draft." }]);
-        return;
-    }
-
-    const topic = inputText.trim();
-    setBlogDraft(null); 
-    setIsGeneratingDraft(true);
-    setInputText('');
-
-    try {
-        setMessages(prev => [...prev, { type: "user", text: `Generate a blog draft about: ${topic}` }]);
-        
-        const apiPayload = { topic: topic };
-
-        const res = await fetch(BLOG_DRAFT_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(apiPayload)
-        });
-
-        const data = await res.json();
-        
-        if (res.ok && data.draft) {
-            setBlogDraft(data.draft);
-            setMessages(prev => [...prev, { type: "bot", text: `Generated a draft for "${topic}". Scroll down to view.` }]);
-        } else {
-            const errorText = data.error || data.details || 'Draft generator returned an empty response.';
-            setMessages(prev => [...prev, { type: "bot", text: `Error in Draft Generation: ${errorText}` }]);
-            console.error("Gemini Draft Error:", errorText);
-        }
-
-    } catch (err) {
-        setMessages(prev => [...prev, { type: "bot", text: `Network Error: Could not connect to the draft service.` }]);
-        console.error("Gemini Draft fetch error:", err);
-    } finally {
-        setIsGeneratingDraft(false);
-    }
-  };
-
-
-  // Handles Enter key press for the main chat
+  // Handles Enter key press
   const handleInputSubmit = (e) => {
-    if (e.key === "Enter" && inputText.trim() && !isProcessing && !isGeneratingDraft) {
+    if (e.key === "Enter" && inputText.trim() && !isProcessing) {
         sendMessage(inputText);
     }
   };
@@ -219,7 +150,7 @@ const Chatbot = () => {
         whileHover={{ scale: 1.2, boxShadow: `0 0 20px ${NEON_BLUE}` }}
         whileTap={{ scale: 0.95 }}
       >
-        <FaRobot size={28} />
+        <Bot size={28} />
       </motion.div>
 
       {/* Chatbox */}
@@ -273,7 +204,7 @@ const Chatbot = () => {
               
               {/* Loading/Typing Indicator */}
               <AnimatePresence>
-                {(isProcessing || isGeneratingDraft) && (
+                {isProcessing && (
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -282,7 +213,7 @@ const Chatbot = () => {
                     style={{ backgroundColor: NEON_BLUE, color: DARK_BG, maxWidth: '150px' }}
                   >
                     <span className="animate-pulse font-semibold">
-                        {isGeneratingDraft ? 'Generating Draft...' : 'Assistant is typing...'}
+                        Assistant is typing...
                     </span>
                   </motion.div>
                 )}
@@ -292,78 +223,60 @@ const Chatbot = () => {
             </div>
 
             {/* Input and Send Button */}
-            <div className="p-3 border-t border-gray-700 flex flex-col gap-2">
+            <div className="p-3 border-t border-gray-700 flex gap-2">
                 <input
                     type="text"
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
                     onKeyDown={handleInputSubmit}
-                    placeholder={isProcessing || isGeneratingDraft ? "Waiting for response..." : "Ask or enter a blog topic..."}
-                    disabled={isProcessing || isGeneratingDraft}
+                    placeholder={isProcessing ? "Waiting for response..." : "Ask a question or enter a topic..."}
+                    disabled={isProcessing}
                     className={`flex-1 px-3 py-2 rounded-full text-white outline-none transition-all duration-300 placeholder-gray-500 text-sm`}
                     style={{ 
                         backgroundColor: 'rgba(50, 50, 50, 0.5)',
-                        border: `1px solid ${NEON_PINK}`,
-                        boxShadow: `0 0 5px ${NEON_PINK}`
+                        border: `1px solid ${NEON_BLUE}`,
+                        boxShadow: `0 0 5px ${NEON_BLUE}`
                     }}
                 />
-                <div className="flex justify-end gap-2">
-                    {/* Gemini Draft Generator Button */}
-                    <motion.button
-                        onClick={generateBlogDraft}
-                        disabled={!inputText.trim() || isProcessing || isGeneratingDraft}
-                        whileHover={{ scale: !isProcessing && !isGeneratingDraft ? 1.05 : 1 }}
-                        whileTap={{ scale: !isProcessing && !isGeneratingDraft ? 0.95 : 1 }}
-                        className={`px-3 py-2 rounded-full font-semibold transition-colors duration-200 text-xs flex items-center justify-center`}
-                        style={{
-                            backgroundColor: NEON_PINK,
-                            color: 'white',
-                            boxShadow: `0 0 10px ${NEON_PINK}`
-                        }}
-                    >
-                        <Sparkles size={16} className="mr-1" />
-                        Draft
-                    </motion.button>
-
-                    {/* OpenRouter Chat Send Button */}
-                    <motion.button
-                        onClick={() => sendMessage(inputText)}
-                        disabled={!inputText.trim() || isProcessing || isGeneratingDraft}
-                        whileHover={{ scale: !isProcessing && !isGeneratingDraft ? 1.05 : 1 }}
-                        whileTap={{ scale: !isProcessing && !isGeneratingDraft ? 0.95 : 1 }}
-                        className={`px-3 py-2 rounded-full font-semibold transition-colors duration-200 text-xs flex items-center`}
-                        style={{
-                            backgroundColor: NEON_BLUE,
-                            color: DARK_BG,
-                            boxShadow: `0 0 10px ${NEON_BLUE}`
-                        }}
-                    >
-                        <Send size={16} className="mr-1" />
-                        Chat
-                    </motion.button>
-                </div>
+                <motion.button
+                    onClick={() => sendMessage(inputText)}
+                    disabled={!inputText.trim() || isProcessing}
+                    whileHover={{ scale: (!inputText.trim() || isProcessing) ? 1 : 1.05 }}
+                    whileTap={{ scale: (!inputText.trim() || isProcessing) ? 1 : 0.95 }}
+                    className={`px-3 py-2 rounded-full font-semibold transition-colors duration-200 text-xs flex items-center ${
+                         (!inputText.trim() || isProcessing) ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                    style={{
+                        backgroundColor: NEON_BLUE,
+                        color: DARK_BG,
+                        boxShadow: `0 0 10px ${NEON_BLUE}`
+                    }}
+                >
+                    <Send size={16} className="mr-1" />
+                    Chat
+                </motion.button>
             </div>
 
             {/* Categorized Questions/Suggestions */}
             <div className="p-3 border-t border-gray-700 flex flex-col gap-3">
-              <div className="font-semibold" style={{ color: NEON_BLUE }}>Suggested Topics:</div>
+              <div className="font-semibold" style={{ color: NEON_BLUE }}>Suggested Topics (Instant Answer):</div>
               {Object.entries(ruleBasedQA).map(([category, qas], idx) => (
                 <div key={idx} className="border-t border-gray-800 pt-2 first:border-t-0 first:pt-0">
-                  <div className="font-bold text-white mb-1 text-sm">{category}</div>
+                  <div className="font-bold text-white mb-1 text-sm" style={{ color: NEON_PINK }}>{category}</div>
                   <div className="flex flex-wrap gap-2">
                     {qas.map((qa, i) => (
                       <motion.button
                         key={i}
                         onClick={() => handleQuestionClick(qa)}
-                        disabled={isProcessing || isGeneratingDraft}
-                        whileHover={{ scale: isProcessing || isGeneratingDraft ? 1 : 1.05 }}
-                        whileTap={{ scale: isProcessing || isGeneratingDraft ? 1 : 0.98 }}
+                        disabled={isProcessing}
+                        whileHover={{ scale: isProcessing ? 1 : 1.05 }}
+                        whileTap={{ scale: isProcessing ? 1 : 0.98 }}
                         className={`text-xs px-2 py-1 rounded-full border border-gray-600 transition-all duration-300 ${
-                            isProcessing || isGeneratingDraft 
-                                ? "bg-gray-800 text-gray-500 cursor-not-allowed" 
+                            isProcessing 
+                                ? "bg-gray-800 text-gray-500 cursor-not-allowed opacity-50" 
                                 : "bg-gray-700 hover:bg-gray-600"
                         }`}
-                        style={{ color: NEON_BLUE, boxShadow: isProcessing || isGeneratingDraft ? 'none' : `0 0 5px ${NEON_BLUE}` }}
+                        style={{ color: NEON_BLUE, boxShadow: isProcessing ? 'none' : `0 0 5px ${NEON_BLUE}` }}
                       >
                         {qa.question}
                       </motion.button>
@@ -372,36 +285,6 @@ const Chatbot = () => {
                 </div>
               ))}
             </div>
-            
-            {/* Gemini Draft Output Area */}
-            <AnimatePresence>
-                {blogDraft && (
-                    <motion.div 
-                        ref={draftRef}
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="p-4 border-t border-gray-700 overflow-hidden"
-                        style={{ backgroundColor: 'rgba(30, 30, 30, 0.7)' }}
-                    >
-                        <h3 className="font-extrabold mb-2 flex items-center text-sm" style={{ color: NEON_PINK }}>
-                            <Sparkles size={18} className="mr-1" /> Blog Draft
-                        </h3>
-                        <div className="text-xs text-gray-200 whitespace-pre-wrap max-h-48 overflow-y-auto custom-scrollbar p-2 rounded border" style={{ backgroundColor: DARK_BG, borderColor: NEON_PINK }}>
-                            {blogDraft}
-                        </div>
-                        <motion.button 
-                            onClick={() => handleCopyToClipboard(blogDraft)}
-                            className="mt-3 text-xs flex items-center text-white px-3 py-1 rounded-full hover:opacity-80 transition-colors"
-                            style={{ backgroundColor: NEON_PINK }}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                        >
-                            <Copy size={14} className="mr-1" /> Copy Draft
-                        </motion.button>
-                    </motion.div>
-                )}
-            </AnimatePresence>
 
             {/* Custom scrollbar and theme classes */}
             <style>{`
