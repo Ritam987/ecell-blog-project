@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "react-router-dom";
 import { FaRobot } from "react-icons/fa"; // cute robot icon
 
-// Rules-based QA
+// Your existing rule-based QA
 const ruleBasedQA = {
   "User Actions": [
     { question: "How to login?", answer: "Click on the Login button in the navbar and enter your credentials." },
@@ -24,25 +24,48 @@ const ruleBasedQA = {
 
 const Chatbot = () => {
   const [messages, setMessages] = useState([
-    { type: "bot", text: "Hello! I am your AI assistant 🤖. Click a question below or type a message." },
+    { type: "bot", text: "Hello! I am your assistant. Click a question below or type a message." },
   ]);
   const [visible, setVisible] = useState(false);
-  const [inputText, setInputText] = useState("");
+  const [userMessage, setUserMessage] = useState("");
   const chatEndRef = useRef(null);
   const location = useLocation();
 
-  // Scroll to bottom when new message
+  // Scroll to bottom when new message arrives
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Reset chat on route change
+  // Auto-hide chatbot and reset on route change
   useEffect(() => {
     setVisible(false);
-    setMessages([{ type: "bot", text: "Hello! I am your AI assistant 🤖. Click a question below or type a message." }]);
+    setMessages([{ type: "bot", text: "Hello! I am your assistant. Click a question below or type a message." }]);
   }, [location.pathname]);
 
-  // Handle rules-based question click
+  // Handle user sending a message to backend
+  const sendMessage = async (e) => {
+    e.preventDefault();
+    if (!userMessage.trim()) return;
+
+    const messageText = userMessage.trim();
+    setMessages((prev) => [...prev, { type: "user", text: messageText }]);
+    setUserMessage("");
+
+    try {
+      const res = await fetch("https://ecell-blog-project.onrender.com/api/chatbot", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: messageText }),
+      });
+      const data = await res.json();
+      setMessages((prev) => [...prev, { type: "bot", text: data.reply }]);
+    } catch (err) {
+      console.error(err);
+      setMessages((prev) => [...prev, { type: "bot", text: "Sorry, I couldn't understand that. Can you rephrase?" }]);
+    }
+  };
+
+  // Handle rule-based QA button click
   const handleQuestionClick = (qa) => {
     setMessages((prev) => [
       ...prev,
@@ -51,39 +74,14 @@ const Chatbot = () => {
     ]);
   };
 
-  // Handle sending message to backend AI
-  const handleSendMessage = async (e) => {
-    e.preventDefault();
-    const trimmed = inputText.trim();
-    if (!trimmed) return;
-
-    setMessages((prev) => [...prev, { type: "user", text: trimmed }]);
-    setInputText("");
-
-    try {
-      const res = await fetch("https://ecell-blog-project.onrender.com/api/chatbot", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: trimmed }),
-      });
-      const data = await res.json();
-      const reply = data.reply || "Sorry, I couldn't understand that. Please try again.";
-
-      setMessages((prev) => [...prev, { type: "bot", text: reply }]);
-    } catch (err) {
-      console.error(err);
-      setMessages((prev) => [...prev, { type: "bot", text: "AI service is currently unavailable." }]);
-    }
-  };
-
   return (
-    <div className="fixed bottom-4 right-4 flex flex-col items-end z-50">
-      {/* Floating robot icon button */}
+    <div className="fixed bottom-6 right-6 flex flex-col items-end z-50">
+      {/* Floating Robot Icon */}
       <motion.button
-        className="mb-2 bg-neonBlue text-white p-3 rounded-full shadow-neon hover:shadow-neonHover"
-        onClick={() => setVisible(!visible)}
-        whileHover={{ scale: 1.2, rotate: [0, 10, -10, 0] }}
-        whileTap={{ scale: 0.95 }}
+        className="mb-2 w-14 h-14 rounded-full bg-neonBlue text-white flex items-center justify-center shadow-neon cursor-pointer"
+        onClick={() => setVisible((prev) => !prev)}
+        whileHover={{ scale: 1.2, rotate: [0, 10, -10, 0], boxShadow: "0 0 12px #39ff14" }}
+        whileTap={{ scale: 0.9 }}
       >
         <FaRobot size={28} />
       </motion.button>
@@ -99,9 +97,7 @@ const Chatbot = () => {
             transition={{ duration: 0.3 }}
           >
             {/* Header */}
-            <div className="bg-neonBlue text-white px-4 py-2 font-bold rounded-t-lg">
-              Chatbot
-            </div>
+            <div className="bg-neonBlue text-white px-4 py-2 font-bold rounded-t-lg">Chatbot</div>
 
             {/* Messages */}
             <div className="flex-1 p-4 overflow-y-auto custom-scrollbar space-y-2" style={{ maxHeight: "300px" }}>
@@ -123,24 +119,21 @@ const Chatbot = () => {
               <div ref={chatEndRef} />
             </div>
 
-            {/* Input box */}
-            <form onSubmit={handleSendMessage} className="flex border-t border-neonBlue">
+            {/* User Input */}
+            <form onSubmit={sendMessage} className="flex border-t border-neonBlue">
               <input
                 type="text"
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
+                value={userMessage}
+                onChange={(e) => setUserMessage(e.target.value)}
                 placeholder="Type a message..."
                 className="flex-1 px-3 py-2 bg-darkBg text-white outline-none"
               />
-              <button
-                type="submit"
-                className="px-3 bg-neonBlue hover:bg-neonPink text-darkBg transition-colors"
-              >
+              <button type="submit" className="px-4 bg-neonBlue text-white hover:bg-neonPink transition-colors">
                 Send
               </button>
             </form>
 
-            {/* Rules-based questions */}
+            {/* Rule-Based QA Buttons */}
             <div className="p-2 border-t border-neonBlue flex flex-col gap-2">
               {Object.entries(ruleBasedQA).map(([category, qas], idx) => (
                 <div key={idx}>
@@ -161,12 +154,22 @@ const Chatbot = () => {
               ))}
             </div>
 
-            {/* Custom scrollbar */}
+            {/* Custom Scrollbar */}
             <style jsx>{`
-              .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-              .custom-scrollbar::-webkit-scrollbar-track { background: #1a1a1a; border-radius: 4px; }
-              .custom-scrollbar::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
-              .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #888; }
+              .custom-scrollbar::-webkit-scrollbar {
+                width: 6px;
+              }
+              .custom-scrollbar::-webkit-scrollbar-track {
+                background: #1a1a1a;
+                border-radius: 4px;
+              }
+              .custom-scrollbar::-webkit-scrollbar-thumb {
+                background: #555;
+                border-radius: 4px;
+              }
+              .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                background: #888;
+              }
             `}</style>
           </motion.div>
         )}
