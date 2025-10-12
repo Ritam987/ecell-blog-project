@@ -109,18 +109,35 @@ const Chatbot = () => {
         body: JSON.stringify(apiPayload)
       });
       
-      const data = await res.json();
+      // --- FIX: Safely read response as text first to handle non-JSON server errors ---
+      let responseText = await res.text();
+      let data = {};
+      
+      try {
+        // Attempt to parse the text as JSON
+        data = JSON.parse(responseText);
+      } catch (e) {
+        // If parsing fails, the server returned non-JSON data (e.g., HTML error or empty body)
+        console.error("Server sent non-JSON response:", responseText);
+        setMessages(prev => [...prev, { 
+            type: "bot", 
+            text: `Error: The server sent an invalid response (HTTP ${res.status}). This often means the backend service is down or crashed. Content received: "${responseText.substring(0, 100)}..."` 
+        }]);
+        return; // Exit the function after logging the error
+      }
+      // --- END FIX ---
       
       if (res.ok && data.reply) {
         setMessages(prev => [...prev, { type: "bot", text: data.reply }]);
       } else {
+        // Handle server-returned JSON error (e.g., 400, 500 status with JSON body)
         const errorText = data.error || data.details || 'AI Chat returned an error or empty response.';
-        setMessages(prev => [...prev, { type: "bot", text: `Error: ${errorText}. Please check the server logs.` }]);
+        setMessages(prev => [...prev, { type: "bot", text: `AI Service Error: ${errorText}. Please check the server logs for API key or network issues.` }]);
         console.error("OpenRouter Error:", errorText);
       }
 
     } catch (err) {
-      setMessages(prev => [...prev, { type: "bot", text: `Network Error: Could not connect to the chat service.` }]);
+      setMessages(prev => [...prev, { type: "bot", text: `Network Error: Could not connect to the chat service. Check your network connection.` }]);
       console.error("Chatbot fetch error:", err);
     } finally {
       setIsProcessing(false); 
@@ -161,7 +178,7 @@ const Chatbot = () => {
             style={{ 
               backgroundColor: DARK_BG, 
               border: `2px solid ${NEON_BLUE}`,
-              boxShadow: `0 0 20px ${NEON_BLUE}`,
+              boxBoxShadow: `0 0 20px ${NEON_BLUE}`,
               minHeight: '450px'
             }}
             initial={{ opacity: 0, y: 20, x: 20 }}
