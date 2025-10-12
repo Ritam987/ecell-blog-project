@@ -1,23 +1,19 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "react-router-dom";
-import { Send, Bot } from 'lucide-react'; // Using 'Bot' from lucide-react
+import { Send, Bot } from 'lucide-react'; 
 
-// --- START OF CONFIGURATION (API Endpoints & Details) ---
-// OpenRouter Chat Proxy (General Q&A)
-const CHAT_PROXY_URL = "/api/chatbot"; 
-
-// Details passed to the proxy server
-const OPENROUTER_MODEL = "openai/gpt-oss-20b:free"; 
-const APP_REFERER = 'https://ecell-blog-project.onrender.com'; 
-const APP_TITLE = "E-Cell Blog Assistant";
+// --- START OF CONFIGURATION ---
+// *** FIX APPLIED HERE: Using the correct endpoint /api/generate ***
+const CHAT_PROXY_URL = "/api/generate"; 
 
 // Custom theme colors for React styles
 const NEON_BLUE = 'rgb(57, 255, 20)'; 
-const NEON_PINK = '#ff00ff'; // Keeping pink for highlight/accents
+const NEON_PINK = '#ff00ff';
 const DARK_BG = 'rgb(10, 10, 10)'; 
 // --- END OF CONFIGURATION ---
 
+// Rule-based QA for instant, non-AI answers
 const ruleBasedQA = {
   "User Actions (How-to)": [
     { question: "How to login?", answer: "Click on the Login button in the navbar and enter your credentials." },
@@ -42,11 +38,11 @@ const Chatbot = () => {
   ]);
   const [visible, setVisible] = useState(false);
   const [inputText, setInputText] = useState("");
-  const [isProcessing, setIsProcessing] = useState(false); // For OpenRouter Chat
+  const [isProcessing, setIsProcessing] = useState(false); 
 
   const chatEndRef = useRef(null);
   const location = useLocation();
-  
+    
   // scroll to bottom when new message arrives
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -75,7 +71,7 @@ const Chatbot = () => {
       ]);
     }
   };
-  
+    
   // --- API Call Handler (OpenRouter Chat) ---
 
   const sendMessage = async (text) => {
@@ -89,30 +85,29 @@ const Chatbot = () => {
       setInputText("");
       return;
     }
-    
+        
     // 2. If no rule-based match, send to AI chat
     setMessages(prev => [...prev, { type: "user", text: query }]);
     setInputText("");
     setIsProcessing(true); 
-    
+        
     try {
+      // *** FIX APPLIED HERE: Backend expects 'prompt', not 'message'. ***
       const apiPayload = {
-        message: query,
-        model: OPENROUTER_MODEL, 
-        referer: APP_REFERER,
-        title: APP_TITLE,
+        prompt: query, 
+        // Removed: model, referer, title as they are managed securely on the backend
       };
-      
+            
       const res = await fetch(CHAT_PROXY_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(apiPayload)
       });
-      
+            
       // --- IMPORTANT: Safely read response as text first to handle non-JSON server errors ---
       let responseText = await res.text();
       let data = {};
-      
+            
       try {
         // Attempt to parse the text as JSON
         data = JSON.parse(responseText);
@@ -127,14 +122,17 @@ const Chatbot = () => {
         return; // Exit the function after logging the error
       }
       // --- END SAFE PARSING ---
+            
+      // *** FIX APPLIED HERE: Backend returns 'content', not 'reply'. ***
+      const botReply = data.content; 
       
-      if (res.ok && data.reply) {
+      if (res.ok && botReply) {
         // Successful response path
-        setMessages(prev => [...prev, { type: "bot", text: data.reply }]);
+        setMessages(prev => [...prev, { type: "bot", text: botReply }]);
       } else {
         // Handle server-returned JSON error (e.g., 400, 500 status with JSON body or 200 with bad content)
         const errorText = data.error || data.details || 'AI Chat returned an unexpected error or empty response.';
-        
+                
         // Use the status code from the response for clarity
         const statusMessage = `AI Service Error (Status ${res.status}):`;
 
@@ -267,7 +265,7 @@ const Chatbot = () => {
                     whileHover={{ scale: (!inputText.trim() || isProcessing) ? 1 : 1.05 }}
                     whileTap={{ scale: (!inputText.trim() || isProcessing) ? 1 : 0.95 }}
                     className={`px-3 py-2 rounded-full font-semibold transition-colors duration-200 text-xs flex items-center ${
-                         (!inputText.trim() || isProcessing) ? 'opacity-50 cursor-not-allowed' : ''
+                          (!inputText.trim() || isProcessing) ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
                     style={{
                         backgroundColor: NEON_BLUE,
