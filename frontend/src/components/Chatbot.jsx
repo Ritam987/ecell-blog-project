@@ -32,7 +32,7 @@ const Chatbot = () => {
   // Configuration moved inside the component to prevent ReferenceError
   const OPENROUTER_API_KEY = getEnvVar("REACT_APP_OPENROUTER_API_KEY", "PLACEHOLDER_NOT_SET"); 
   const OPENROUTER_URL = "https://api.openrouter.ai/v1/chat/completions";
-  const APP_REFERER = getEnvVar("REACT_APP_APP_REFERER", "https://local-development-host.com"); 
+  const APP_REFERER = getEnvVar("REACT_APP_APP_REFERER", "https://ecell-blog.onrender.com"); 
   const APP_TITLE = getEnvVar("REACT_APP_APP_TITLE", "Blog Assistant");
   
   const [messages, setMessages] = useState([
