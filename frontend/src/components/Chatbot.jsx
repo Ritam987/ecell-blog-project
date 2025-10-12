@@ -1,14 +1,14 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-// --- START OF CRITICAL SECURITY WARNING ---
-// WARNING: YOUR API KEY IS EXPOSED IN THIS FILE. USE A BACKEND PROXY FOR PRODUCTION.
-const OPENROUTER_API_KEY = "YOUR_SECRET_OPENROUTER_KEY_HERE"; // <<<--- REPLACE WITH YOUR ACTUAL KEY
-const OPENROUTER_URL = "https://api.openrouter.ai/v1/chat/completions";
-// Headers required by OpenRouter
-const APP_REFERER = "https://your-frontend-domain.com"; 
-const APP_TITLE = "Blog Assistant";
-// --- END OF CRITICAL SECURITY WARNING ---
+// Utility function to safely access environment variables, preventing ReferenceError
+// in environments (like the browser/Canvas) where 'process' is not defined.
+const getEnvVar = (name, fallback) => {
+    if (typeof process !== 'undefined' && process.env && process.env[name]) {
+        return process.env[name];
+    }
+    return fallback;
+};
 
 // Hardcoded QA for initial suggestions (Rule-Based functionality is preserved)
 const ruleBasedQA = {
@@ -29,6 +29,12 @@ const ruleBasedQA = {
 };
 
 const Chatbot = () => {
+  // Configuration moved inside the component to prevent ReferenceError
+  const OPENROUTER_API_KEY = getEnvVar("REACT_APP_OPENROUTER_API_KEY", "PLACEHOLDER_NOT_SET"); 
+  const OPENROUTER_URL = "https://api.openrouter.ai/v1/chat/completions";
+  const APP_REFERER = getEnvVar("REACT_APP_APP_REFERER", "https://local-development-host.com"); 
+  const APP_TITLE = getEnvVar("REACT_APP_APP_TITLE", "Blog Assistant");
+  
   const [messages, setMessages] = useState([
     { type: "bot", text: "Hello! I am your assistant. Click a question below or ask me anything." }
   ]);
@@ -65,10 +71,10 @@ const Chatbot = () => {
     setInputText("");
     setIsProcessing(true); // Start loading
 
-    // Security Placeholder Check
-    if (OPENROUTER_API_KEY === "YOUR_SECRET_OPENROUTER_KEY_HERE") {
+    // Runtime Check to ensure the key was set during the build process
+    if (OPENROUTER_API_KEY === "PLACEHOLDER_NOT_SET") {
         setIsProcessing(false);
-        setMessages(prev => [...prev, { type: "bot", text: "SECURITY ERROR: Please replace the placeholder API key in chatbot.jsx (or use a secure backend proxy)." }]);
+        setMessages(prev => [...prev, { type: "bot", text: "Configuration Error: API key was not injected during the build. Check your Render Environment variables." }]);
         return;
     }
     
@@ -89,7 +95,8 @@ const Chatbot = () => {
         method: "POST",
         headers: { 
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+            // Key is exposed here via the Authorization header
+            "Authorization": `Bearer ${OPENROUTER_API_KEY}`, 
             "HTTP-Referer": APP_REFERER,
             "X-Title": APP_TITLE
         },
@@ -290,3 +297,5 @@ const Chatbot = () => {
     </div>
   );
 };
+
+export default Chatbot;
