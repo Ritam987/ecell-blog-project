@@ -80,6 +80,7 @@ const Chatbot = () => {
   // --- FIXED AI MESSAGE HANDLER ---
   const sendMessage = async (text) => {
     const query = text.trim();
+    if (!query) return;
 
     // 1. Check for rule-based response
     const ruleAnswer = getRuleBasedAnswer(query);
@@ -99,7 +100,7 @@ const Chatbot = () => {
     setIsProcessing(true);
 
     try {
-      const apiPayload = { prompt: query };
+      const apiPayload = { message: query }; // ✅ match backend key
 
       const res = await fetch(CHAT_PROXY_URL, {
         method: "POST",
@@ -111,15 +112,13 @@ const Chatbot = () => {
       let botReply = "";
 
       if (contentType && contentType.includes("application/json")) {
-        // ✅ JSON backend
+        // ✅ backend returns { reply: "..." }
         const data = await res.json();
-        botReply = data.content || data.message || JSON.stringify(data);
+        botReply = data.reply || data.message || JSON.stringify(data);
       } else {
-        // ✅ Plain text or fallback
+        // ✅ fallback if non-JSON
         botReply = await res.text();
-        if (!botReply.trim()) {
-          botReply = `⚠️ Empty response received (HTTP ${res.status}).`;
-        }
+        if (!botReply.trim()) botReply = `⚠️ Empty response (HTTP ${res.status}).`;
       }
 
       if (res.ok) {
@@ -127,14 +126,14 @@ const Chatbot = () => {
       } else {
         setMessages((prev) => [
           ...prev,
-          { type: "bot", text: `⚠️ Server Error (Status ${res.status}): ${botReply}` },
+          { type: "bot", text: `⚠️ Server Error (${res.status}): ${botReply}` },
         ]);
       }
     } catch (err) {
       console.error("Chatbot fetch error:", err);
       setMessages((prev) => [
         ...prev,
-        { type: "bot", text: "❌ Network Error: Unable to connect to chat service." },
+        { type: "bot", text: "❌ Network Error: Unable to connect to AI service." },
       ]);
     } finally {
       setIsProcessing(false);
