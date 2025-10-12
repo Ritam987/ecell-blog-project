@@ -4,7 +4,7 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const path = require("path");
 const { GridFSBucket } = require("mongodb");
-const chatbotRoutes = require("./routes/chatbot");
+const fetch = require("node-fetch"); // <-- NEW: Required for making API calls
 
 dotenv.config();
 const app = express();
@@ -21,11 +21,84 @@ const authRoutes = require("./routes/auth");
 const blogRoutes = require("./routes/blogs");
 const userRoutes = require("./routes/users");
 
+// --- API Key Configuration ---
+// Retrieve the API key securely from the environment variables
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY; 
+// --- End Config ---
 
 app.use("/api/auth", authRoutes);
 app.use("/api/blogs", blogRoutes);
 app.use("/api/users", userRoutes);
-app.use("/api/chatbot", chatbotRoutes);
+
+// =========================================================================
+// NEW: CHATBOT PROXY ROUTE INTEGRATION
+// This route now handles the secure connection to OpenRouter.
+// =========================================================================
+app.post("/api/chatbot", async (req, res) => {
+    // 1. Check for API Key configuration
+    if (!OPENROUTER_API_KEY) {
+        console.error('SERVER ERROR: OPENROUTER_API_KEY environment variable is not set!');
+        return res.status(500).json({ error: 'Server configuration error: API key missing.' });
+    }
+
+    // 2. Extract parameters passed from the frontend (chatbot.jsx)
+    const { user_prompt, model, referer, title } = req.body;
+
+    if (!user_prompt) {
+        return res.status(400).json({ error: 'Missing user_prompt in request body.' });
+    }
+
+    // 3. Construct the payload required by the OpenRouter API
+    const openRouterPayload = {
+        model: model || "openai/gpt-oss-20b:free", 
+        messages: [
+            { "role": "system", "content": "You are a helpful assistant for a blogging website. Answer user queries concisely." },
+            { "role": "user", "content": user_prompt }
+        ],
+        max_tokens: 500,
+        temperature: 0.7
+    };
+
+    try {
+        // 4. Make the external, secure request to OpenRouter
+        const response = await fetch("https://api.openrouter.ai/v1/chat/completions", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                // API key is securely accessed from the server's environment
+                'Authorization': `Bearer ${OPENROUTER_API_KEY}`, 
+                // Pass required OpenRouter usage headers
+                'HTTP-Referer': referer, 
+                'X-Title': title
+            },
+            body: JSON.stringify(openRouterPayload)
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            const reply = data.choices?.[0]?.message?.content;
+            
+            if (reply) {
+                // 5. Send the successful reply back to the frontend
+                res.status(200).json({ reply: reply });
+            } else {
+                console.error('OpenRouter response error: Invalid structure or empty content.');
+                res.status(502).json({ error: 'OpenRouter returned an invalid response structure.' });
+            }
+        } else {
+            // Forward OpenRouter errors back to the frontend
+            const errorText = await response.text();
+            console.error(`OpenRouter HTTP Error ${response.status}: ${errorText}`);
+            res.status(response.status).json({ error: `AI Service Error (${response.status})` });
+        }
+    } catch (error) {
+        console.error('Network or processing error:', error);
+        res.status(500).json({ error: 'Internal proxy server error during API request.' });
+    }
+});
+// =========================================================================
+// END CHATBOT PROXY ROUTE
+// =========================================================================
 
 
 // MongoDB connection
@@ -49,8 +122,3 @@ app.get("/", (req, res) => res.send("E-Cell Blogging Backend is running!"));
 // Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
-
-
-
-
