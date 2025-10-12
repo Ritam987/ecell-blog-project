@@ -1,25 +1,26 @@
 // This file defines the Express Router for handling chatbot requests.
-// It is written in TypeScript/ESM syntax for proper integration, 
-// but uses CommonJS export for compatibility with server.js.
+// It is written in pure JavaScript (CommonJS) for direct compatibility with Node.js environments.
 
-import express, { Request, Response, Router } from 'express';
-// NOTE: node-fetch is typically not needed in modern Node.js environments (v18+),
-// as the native global fetch API is available, but keeping for compatibility.
-import fetch from 'node-fetch'; 
+const express = require('express');
+// If you are on Node < v18, you must install node-fetch: npm install node-fetch
+// If on Node v18+, you can use the global fetch, but we'll stick to 'node-fetch' require
+// for maximum compatibility with existing setups.
+const fetch = require('node-fetch');
 
-const router: Router = express.Router();
+const router = express.Router();
 
 // --- Configuration (Read from environment variables) ---
-const OPENROUTER_API_KEY: string | undefined = process.env.OPENROUTER_API_KEY; 
-const APP_REFERER: string = process.env.APP_URL || 'https://ecell-blog-project.onrender.com'; 
-const APP_TITLE: string = "E-Cell Blog Assistant";
-const MODEL_NAME: string = "openai/gpt-oss-20b:free"; 
-const OPENROUTER_ENDPOINT: string = "https://openrouter.ai/api/v1/chat/completions";
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY; 
+const APP_REFERER = process.env.APP_URL || 'https://ecell-blog-project.onrender.com'; 
+const APP_TITLE = "E-Cell Blog Assistant";
+const MODEL_NAME = "openai/gpt-oss-20b:free"; 
+const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 // --- End Configuration ---
 
 
-router.post('/', async (req: Request, res: Response) => {
-    const userMessage: string = req.body.message; 
+router.post('/', async (req, res) => {
+    // Removed type annotations from request/response and variables
+    const userMessage = req.body.message; 
 
     // 1. Validation and Key Check
     if (!OPENROUTER_API_KEY) {
@@ -61,7 +62,7 @@ router.post('/', async (req: Request, res: Response) => {
 
         // Safely read response as text first to catch upstream non-JSON errors
         const responseText = await response.text();
-        let data: any;
+        let data; // Removed type annotation
 
         try {
             data = JSON.parse(responseText);
@@ -76,7 +77,7 @@ router.post('/', async (req: Request, res: Response) => {
         
         // 4. Check for success (HTTP 200-299) AND expected content structure
         if (response.ok && data.choices && data.choices.length > 0) {
-            const reply: string = data.choices[0].message.content;
+            const reply = data.choices[0].message.content; // Removed type annotation
             // Send the successful reply back to the frontend
             return res.json({ reply });
         }
@@ -97,7 +98,7 @@ router.post('/', async (req: Request, res: Response) => {
             error: `AI Service Error (${response.status}): ${data.error?.message || 'Unexpected API response structure'}` 
         });
 
-    } catch (error: any) {
+    } catch (error) { // Removed type annotation
         // Handle network/internal errors (e.g., DNS, connection refused)
         console.error("Chatbot Proxy Network/Internal Error:", error.message);
         return res.status(500).json({ 
@@ -108,5 +109,4 @@ router.post('/', async (req: Request, res: Response) => {
 });
 
 // IMPORTANT FIX: Export the router using CommonJS module.exports syntax
-// This resolves the "Cannot find module" error when the file is loaded via require()
 module.exports = router;
