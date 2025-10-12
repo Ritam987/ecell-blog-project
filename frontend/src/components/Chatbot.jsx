@@ -2,20 +2,17 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "react-router-dom";
-import { FaRobot } from "react-icons/fa";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { dark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { Send, Bot } from "lucide-react";
 
 // --- CONFIGURATION ---
-const CHAT_PROXY_URL = "https://ecell-blog-project.onrender.com/api/chatbot"; 
-const NEON_BLUE = "#39ff14";
+const CHAT_PROXY_URL = "https://ecell-blog-project.onrender.com/api/generate"; // ✅ Your backend endpoint
+const NEON_BLUE = "rgb(57, 255, 20)";
 const NEON_PINK = "#ff00ff";
-const DARK_BG = "#0a0a0a";
-const NEON_GREEN = "#00ff99";
+const DARK_BG = "rgb(10, 10, 10)";
 
-// --- RULE-BASED RESPONSES ---
+// --- RULE-BASED QA ---
 const ruleBasedQA = {
-  "User Actions": [
+  "User Actions (How-to)": [
     { question: "How to login?", answer: "Click on the Login button in the navbar and enter your credentials." },
     { question: "How to register?", answer: "Click on Register, fill in the details, and submit." },
     { question: "How to logout?", answer: "Click on your profile and select Logout." },
@@ -26,15 +23,19 @@ const ruleBasedQA = {
     { question: "How can I like a blog?", answer: "On any blog page or blog card, click the 'Like' button to like or unlike a blog." },
     { question: "How can I comment on a blog?", answer: "Go to the blog details page, type your comment in the comment box, and click 'Submit'." },
   ],
-  "Admin Actions": [
+  "General Information": [
     { question: "How to access admin panel?", answer: "If your account has admin rights, click on 'Admin Panel' in the navbar to manage users and blogs." },
+    { question: "Who are you?", answer: "I am Scooby Doo, your helpful AI assistant, powered by the OpenRouter AI service." },
   ],
 };
 
 // --- CHATBOT COMPONENT ---
 const Chatbot = () => {
   const [messages, setMessages] = useState([
-    { type: "bot", text: "Hello! I am Scooby Doo, your personal assistant. Click a question below for instant answers or ask any general question." }
+    {
+      type: "bot",
+      text: "Hello! I am Scooby Doo, your personal assistant. Click a suggested question for an instant answer or type your query to ask OpenRouter AI.",
+    },
   ]);
   const [visible, setVisible] = useState(false);
   const [inputText, setInputText] = useState("");
@@ -46,17 +47,20 @@ const Chatbot = () => {
   // Scroll to bottom on new message
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, isProcessing]);
 
   // Reset chatbot on route change
   useEffect(() => {
     setVisible(false);
     setMessages([
-      { type: "bot", text: "Hello! I am Scooby Doo, your personal assistant. Click a question below for instant answers or ask any general question." }
+      {
+        type: "bot",
+        text: "Hello! I am Scooby Doo, your personal assistant. Click a suggested question for an instant answer or type your query to ask OpenRouter AI.",
+      },
     ]);
   }, [location.pathname]);
 
-  // Rule-based answer
+  // --- UTILITY ---
   const getRuleBasedAnswer = useCallback((question) => {
     const categories = Object.values(ruleBasedQA).flat();
     const match = categories.find(
@@ -65,7 +69,6 @@ const Chatbot = () => {
     return match ? match.answer : null;
   }, []);
 
-  // Handle button click (rule-based)
   const handleQuestionClick = (qa) => {
     if (!isProcessing) {
       setMessages((prev) => [
@@ -76,12 +79,11 @@ const Chatbot = () => {
     }
   };
 
-  // Send message to backend AI
+  // --- SEND AI MESSAGE ---
   const sendMessage = async (text) => {
     const query = text.trim();
     if (!query) return;
 
-    // Check rule-based first
     const ruleAnswer = getRuleBasedAnswer(query);
     if (ruleAnswer) {
       setMessages((prev) => [
@@ -93,7 +95,6 @@ const Chatbot = () => {
       return;
     }
 
-    // AI call
     setMessages((prev) => [...prev, { type: "user", text: query }]);
     setInputText("");
     setIsProcessing(true);
@@ -106,123 +107,168 @@ const Chatbot = () => {
       });
 
       let botReply = "";
-      if (res.ok) {
+      const contentType = res.headers.get("content-type");
+
+      if (contentType && contentType.includes("application/json")) {
         const data = await res.json();
-        botReply = data.reply || JSON.stringify(data);
+        botReply = data.reply || data.message || JSON.stringify(data);
       } else {
-        botReply = `⚠️ Server Error (Status ${res.status})`;
+        botReply = await res.text();
+        if (!botReply.trim()) botReply = `⚠️ Empty response (HTTP ${res.status}).`;
       }
 
       setMessages((prev) => [...prev, { type: "bot", text: botReply }]);
     } catch (err) {
       console.error(err);
-      setMessages((prev) => [...prev, { type: "bot", text: "❌ Network Error: Unable to connect." }]);
+      setMessages((prev) => [
+        ...prev,
+        { type: "bot", text: "❌ Network Error: Unable to connect to AI service." },
+      ]);
     } finally {
       setIsProcessing(false);
     }
   };
 
-  // Handle enter key
   const handleInputSubmit = (e) => {
     if (e.key === "Enter" && inputText.trim() && !isProcessing) {
       sendMessage(inputText);
     }
   };
 
-  // Render message (with code formatting)
-  const renderMessage = (msg) => {
-    // If AI sent Markdown code block
-    if (msg.text.startsWith("```")) {
-      const languageMatch = msg.text.match(/```(\w+)/);
-      const lang = languageMatch ? languageMatch[1] : "";
-      const code = msg.text.replace(/```[\w]*\n?/, "").replace(/```$/, "");
-      return <SyntaxHighlighter language={lang} style={dark}>{code}</SyntaxHighlighter>;
-    }
-    // Normal text with line breaks
-    return <span style={{ whiteSpace: "pre-wrap" }}>{msg.text}</span>;
-  };
-
+  // --- UI ---
   return (
-    <div className="fixed bottom-4 right-4 flex flex-col items-end z-50">
-      {/* Floating Robot Icon */}
+    <div className="fixed bottom-4 right-4 flex flex-col items-end z-50 font-sans">
+      {/* Floating Bot Icon */}
       <motion.div
         className="mb-2 bg-neonBlue text-white p-3 rounded-full shadow-lg cursor-pointer flex items-center justify-center"
+        style={{
+          backgroundColor: NEON_BLUE,
+          boxShadow: `0 0 15px ${NEON_BLUE}`,
+        }}
         onClick={() => setVisible(!visible)}
         animate={{ y: [0, -10, 0] }}
         transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-        whileHover={{ scale: 1.2, boxShadow: `0 0 15px ${NEON_BLUE}` }}
+        whileHover={{ scale: 1.2, boxShadow: `0 0 20px ${NEON_BLUE}` }}
         whileTap={{ scale: 0.95 }}
       >
-        <FaRobot size={28} />
+        <Bot size={28} />
       </motion.div>
 
-      {/* Chatbox */}
+      {/* Chat Window */}
       <AnimatePresence>
         {visible && (
           <motion.div
-            className="w-80 max-w-full bg-darkBg border border-neonBlue shadow-lg rounded-lg flex flex-col overflow-hidden"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
+            className="w-80 max-w-full rounded-lg flex flex-col overflow-hidden text-gray-100"
+            style={{
+              backgroundColor: DARK_BG,
+              border: `2px solid ${NEON_BLUE}`,
+              boxShadow: `0 0 20px ${NEON_BLUE}`,
+              minHeight: "450px",
+            }}
+            initial={{ opacity: 0, y: 20, x: 20 }}
+            animate={{ opacity: 1, y: 0, x: 0 }}
+            exit={{ opacity: 0, y: 20, x: 20 }}
             transition={{ duration: 0.3 }}
           >
             {/* Header */}
-            <div className="bg-neonBlue text-black px-4 py-2 font-bold rounded-t-lg">
-              Scooby Doo Assistant
+            <div
+              className="px-4 py-3 font-extrabold text-lg flex justify-between items-center"
+              style={{ backgroundColor: NEON_BLUE, color: DARK_BG, boxShadow: `0 0 10px ${NEON_BLUE}` }}
+            >
+              <span>Scooby Doo Assistant</span>
+              <button
+                onClick={() => setVisible(false)}
+                className="text-xl font-bold hover:text-gray-700 transition-colors"
+              >
+                &times;
+              </button>
             </div>
 
             {/* Messages */}
-            <div className="flex-1 p-3 overflow-y-auto custom-scrollbar space-y-2" style={{ maxHeight: "300px" }}>
+            <div className="flex-1 p-3 overflow-y-auto custom-scrollbar space-y-3" style={{ maxHeight: "300px" }}>
               {messages.map((msg, idx) => (
                 <motion.div
                   key={idx}
                   initial={{ opacity: 0, x: msg.type === "user" ? 50 : -50 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className={`p-2 rounded ${msg.type === "user" ? "bg-neonPink text-white text-right self-end" : "bg-neonGreen text-black text-left self-start"}`}
+                  transition={{ duration: 0.3, type: "spring", stiffness: 100 }}
+                  className={`max-w-[80%] p-3 rounded-xl shadow-lg text-sm break-words ${
+                    msg.type === "user"
+                      ? "bg-purple-600 text-white ml-auto rounded-br-none"
+                      : "bg-gray-700 text-gray-50 mr-auto rounded-tl-none"
+                  }`}
                 >
-                  {renderMessage(msg)}
+                  {msg.text}
                 </motion.div>
               ))}
+
               {isProcessing && (
-                <div className="text-xs text-gray-400 italic">Assistant is typing...</div>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="flex mr-auto items-center p-3 rounded-xl text-xs"
+                  style={{ backgroundColor: NEON_BLUE, color: DARK_BG, maxWidth: "150px" }}
+                >
+                  <span className="animate-pulse font-semibold">Assistant is typing...</span>
+                </motion.div>
               )}
+
               <div ref={chatEndRef} />
             </div>
 
             {/* Input */}
-            <div className="p-2 border-t border-neonBlue flex gap-2">
+            <div className="p-3 border-t border-gray-700 flex gap-2">
               <input
                 type="text"
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyDown={handleInputSubmit}
-                placeholder={isProcessing ? "Waiting for response..." : "Ask a question..."}
+                placeholder={isProcessing ? "Waiting for response..." : "Ask a question or topic..."}
                 disabled={isProcessing}
-                className="flex-1 px-3 py-2 rounded-full bg-gray-800 text-white outline-none"
-                style={{ border: `1px solid ${NEON_BLUE}` }}
+                className="flex-1 px-3 py-2 rounded-full text-white outline-none text-sm"
+                style={{
+                  backgroundColor: "rgba(50,50,50,0.5)",
+                  border: `1px solid ${NEON_BLUE}`,
+                  boxShadow: `0 0 5px ${NEON_BLUE}`,
+                }}
               />
-              <button
+              <motion.button
                 onClick={() => sendMessage(inputText)}
                 disabled={!inputText.trim() || isProcessing}
-                className={`px-3 py-2 rounded-full font-semibold ${!inputText.trim() || isProcessing ? "opacity-50 cursor-not-allowed" : "bg-neonBlue text-black"}`}
+                whileHover={{ scale: !inputText.trim() || isProcessing ? 1 : 1.05 }}
+                whileTap={{ scale: !inputText.trim() || isProcessing ? 1 : 0.95 }}
+                className={`px-3 py-2 rounded-full font-semibold transition-colors duration-200 text-xs flex items-center ${
+                  !inputText.trim() || isProcessing ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+                style={{ backgroundColor: NEON_BLUE, color: DARK_BG, boxShadow: `0 0 10px ${NEON_BLUE}` }}
               >
-                Send
-              </button>
+                <Send size={16} className="mr-1" /> Chat
+              </motion.button>
             </div>
 
-            {/* Rule-based buttons */}
-            <div className="p-2 border-t border-neonBlue flex flex-col gap-2">
+            {/* Suggested Topics */}
+            <div className="p-3 border-t border-gray-700 flex flex-col gap-3">
+              <div className="font-semibold" style={{ color: NEON_BLUE }}>
+                Suggested Topics (Instant Answer):
+              </div>
               {Object.entries(ruleBasedQA).map(([category, qas], idx) => (
-                <div key={idx}>
-                  <div className="font-semibold text-white mb-1">{category}</div>
-                  <div className="flex flex-wrap gap-2 mb-2">
+                <div key={idx} className="border-t border-gray-800 pt-2 first:border-t-0 first:pt-0">
+                  <div className="font-bold text-white mb-1 text-sm" style={{ color: NEON_PINK }}>
+                    {category}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
                     {qas.map((qa, i) => (
                       <motion.button
                         key={i}
                         onClick={() => handleQuestionClick(qa)}
-                        whileHover={{ scale: 1.05, boxShadow: `0 0 10px ${NEON_PINK}` }}
-                        className="bg-gray-700 text-white px-3 py-1 rounded shadow-lg"
+                        disabled={isProcessing}
+                        whileHover={{ scale: isProcessing ? 1 : 1.05 }}
+                        whileTap={{ scale: isProcessing ? 1 : 0.98 }}
+                        className={`text-xs px-2 py-1 rounded-full border border-gray-600 transition-all duration-300 ${
+                          isProcessing ? "bg-gray-800 text-gray-500 cursor-not-allowed opacity-50" : "bg-gray-700 hover:bg-gray-600"
+                        }`}
+                        style={{ color: NEON_BLUE, boxShadow: isProcessing ? "none" : `0 0 5px ${NEON_BLUE}` }}
                       >
                         {qa.question}
                       </motion.button>
@@ -232,7 +278,6 @@ const Chatbot = () => {
               ))}
             </div>
 
-            {/* Custom scrollbar */}
             <style>{`
               .custom-scrollbar::-webkit-scrollbar { width: 6px; }
               .custom-scrollbar::-webkit-scrollbar-track { background: ${DARK_BG}; border-radius: 4px; }
