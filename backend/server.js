@@ -61,7 +61,7 @@ app.post("/api/chatbot", async (req, res) => {
 
     try {
         // 4. Make the external, secure request to OpenRouter
-        const response = await fetch("https://api.openrouter.ai/v1/chat/completions", {
+        const response = await fetch("https://openrouter.ai/api/v1", {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -122,3 +122,4 @@ app.get("/", (req, res) => res.send("E-Cell Blogging Backend is running!"));
 // Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
