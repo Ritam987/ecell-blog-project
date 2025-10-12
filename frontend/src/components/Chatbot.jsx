@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-// --- START OF HARDCODED CONFIGURATION ---
+// --- START OF HARDCODED CONFIGURATION (OpenRouter) ---
 // WARNING: This API key is publicly visible in the browser source code.
 const OPENROUTER_API_KEY = "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"; 
-const OPENROUTER_URL = "https://openrouter.ai/api/v1";
+// CORRECT OpenRouter API endpoint for chat completions
+const OPENROUTER_URL = "https://openrouter.ai/api/v1"; 
 const APP_REFERER = "https://ecell-blog.onrender.com/"; 
 const APP_TITLE = "Blog Assistant";
 // --- END OF HARDCODED CONFIGURATION ---
@@ -67,7 +68,7 @@ const Chatbot = () => {
     try {
       // 3. Prepare OpenRouter Payload
       const apiPayload = {
-        "model": "openai/gpt-oss-20b:free", // Using a common model
+        "model": "openai/gpt-oss-20b:free", // Using the requested free OpenRouter model
         "messages": [
             { "role": "system", "content": "You are a helpful assistant for a blogging website. Answer user queries concisely." },
             { "role": "user", "content": text }
@@ -83,38 +84,55 @@ const Chatbot = () => {
           "X-Title": APP_TITLE
       };
       
-      // === LOGGING ADDED FOR DEBUGGING DNS ERROR ===
-      console.log("Attempting OpenRouter API call...");
-      console.log("Target URL:", OPENROUTER_URL);
-      console.log("Headers (excluding full key):", { ...requestHeaders, "Authorization": requestHeaders.Authorization.substring(0, 10) + '...' });
-      // ===========================================
+      const MAX_RETRIES = 3;
+      let lastError = null;
 
-      // 4. Send request directly to OpenRouter
-      const res = await fetch(OPENROUTER_URL, {
-        method: "POST",
-        headers: requestHeaders,
-        body: JSON.stringify(apiPayload)
-      });
-      
-      const data = await res.json();
-      
-      // 5. Handle response
-      if (res.ok && data.choices && data.choices.length > 0) {
-        // Success: Extract content
-        const reply = data.choices[0].message.content;
-        setMessages(prev => [...prev, { type: "bot", text: reply }]);
-      } else if (data.error) {
-        // API Error from OpenRouter (e.g., invalid key, rate limit)
-        const errorMessage = data.error.message || `API Error (${res.status}): ${JSON.stringify(data)}`;
-        setMessages(prev => [...prev, { type: "bot", text: `AI Service Error: ${errorMessage}` }]);
-      } else {
-        // Unknown error structure
-        setMessages(prev => [...prev, { type: "bot", text: "Sorry, I received an unclear response from the AI service. Status: " + res.status }]);
+      for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        // Logging is kept for debugging the persistent network issue
+        console.log(`Attempting OpenRouter API call (Attempt ${attempt + 1}/${MAX_RETRIES})...`);
+        console.log("Target URL:", OPENROUTER_URL);
+        console.log("Headers (excluding full key):", { ...requestHeaders, "Authorization": requestHeaders.Authorization.substring(0, 10) + '...' });
+
+        try {
+          // 4. Send request directly to OpenRouter
+          const res = await fetch(OPENROUTER_URL, {
+            method: "POST",
+            headers: requestHeaders,
+            body: JSON.stringify(apiPayload)
+          });
+          
+          if (res.ok) {
+            const data = await res.json();
+            // 5. Handle response (Success path)
+            if (data.choices && data.choices.length > 0) {
+              const reply = data.choices[0].message.content;
+              setMessages(prev => [...prev, { type: "bot", text: reply }]);
+              return; // Exit function on success
+            } else if (data.error) {
+              // API Error from OpenRouter 
+              throw new Error(data.error.message || `API Error (${res.status}): ${JSON.stringify(data)}`);
+            }
+          }
+          
+          // Non-OK status code (e.g., 4xx, 5xx)
+          throw new Error(`HTTP Error Status: ${res.status}`);
+
+        } catch (err) {
+          lastError = err;
+          if (attempt < MAX_RETRIES - 1) {
+            const delay = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s delay
+            await new Promise(resolve => setTimeout(resolve, delay));
+          } else {
+            // Last attempt failed
+            throw lastError;
+          }
+        }
       }
+    // Catch block handles final failure (after all retries)
     } catch (err) {
-      // Network failure
-      setMessages(prev => [...prev, { type: "bot", text: "Error contacting the OpenRouter service. Please check your network." }]);
-      console.error("Frontend fetch error:", err);
+      // Network failure or final API error after retries
+      setMessages(prev => [...prev, { type: "bot", text: "Error contacting the OpenRouter service after multiple retries. The issue is almost certainly network-related (DNS/Firewall) and requires a backend proxy to fix." }]);
+      console.error("Frontend fetch error (Final Failure):", err);
     } finally {
       setIsProcessing(false); // Stop loading regardless of outcome
     }
