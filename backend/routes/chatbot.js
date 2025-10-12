@@ -13,11 +13,18 @@ router.post("/", async (req, res) => {
     return res.status(400).json({ error: "Message is required" });
   }
 
+  // Check for API Key
+  if (!OPENROUTER_API_KEY) {
+    return res.status(503).json({ error: "Service Unavailable: API key is not configured." });
+  }
+
   try {
     // Send user message to OpenRouter GPT-OSS-20B
     const response = await axios.post(
       "https://api.openrouter.ai/v1/chat/completions",
       {
+        // NOTE: The model name usually includes the provider on OpenRouter. 
+        // A safer model name might be "openai/gpt-3.5-turbo", but we stick to the provided one.
         model: "gpt-oss-20b",
         messages: [
           {
