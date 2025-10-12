@@ -2,15 +2,12 @@ import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 // --- START OF CONFIGURATION (Proxy Endpoint) ---
-// IMPORTANT: This URL MUST match the route in your server.js file.
-// Backend Route: app.post("/api/chatbot", ...)
+// 1. FIX: Set to the new backend route mounted in server.js
 const PROXY_URL = "/api/chatbot"; 
 
-// These fields are passed to the proxy server to set the OpenRouter headers
-// --- UPDATED to use the explicit backend URL ---
+// These fields are passed to the proxy server for OpenRouter referral headers
 const APP_REFERER = "https://ecell-blog-project.onrender.com"; 
-const APP_TITLE = "Blog Assistant";
-// NOTE: Although the backend hardcodes the model, we send this for completeness.
+const APP_TITLE = "E-Cell Blog Assistant";
 const MODEL = "openai/gpt-oss-20b:free"; 
 // --- END OF CONFIGURATION ---
 
@@ -70,9 +67,9 @@ const Chatbot = () => {
     
     try {
       // 1. Prepare Payload for the Backend Proxy
-      // Keys MUST match what server.js is expecting: user_prompt, model, referer, title
+      // NOTE: Using 'message' key to match the routes/chatbot.ts implementation
       const apiPayload = {
-        user_prompt: text, 
+        message: text, // *** CORRECT: Using 'message' key to match backend route ***
         model: MODEL, 
         referer: APP_REFERER,
         title: APP_TITLE,
@@ -96,7 +93,6 @@ const Chatbot = () => {
             body: JSON.stringify(apiPayload)
           });
 
-          // Clone the response stream before reading it to handle parsing errors
           const clonedRes = res.clone(); 
           let data;
           let rawText = null;
@@ -104,21 +100,15 @@ const Chatbot = () => {
           try {
             data = await res.json();
           } catch (e) {
-            // Read raw text from the cloned stream for detailed error reporting
             rawText = await clonedRes.text();
             throw new Error(`Server Response Error. Raw text returned: "${rawText.substring(0, 100)}..."`);
           }
           
           if (res.ok) {
-            // 4. Handle successful response. The server.js returns { reply: "..." }
-            if (data.reply) {
+            // 4. Handle successful response. The new backend returns the reply in the 'reply' key.
+            if (data.reply) { // *** CORRECT: Expecting 'data.reply' from backend route ***
               setMessages(prev => [...prev, { type: "bot", text: data.reply }]);
               return; // Exit function on success
-            }
-            // Fallback check (less likely if server.js is correct, but safe)
-            if (data.content) { 
-                setMessages(prev => [...prev, { type: "bot", text: data.content }]);
-                return; // Exit function on success
             }
           }
           
@@ -139,15 +129,12 @@ const Chatbot = () => {
     } catch (err) {
       let errorMessage = `AI Service connection failed. Reason: ${err.message}`;
       
-      // Provide better feedback for common backend errors
       if (err.message.includes("Raw text returned")) {
           errorMessage = `Backend Proxy returned an unexpected response! This is likely a backend crash (500) or misconfiguration. ${err.message}`;
       } else if (err.message.includes("Proxy Error: Status 500")) {
           errorMessage = "Internal Server Error (500). The backend proxy crashed. Please check your server logs for a stack trace.";
-      } else if (err.message.includes("Proxy Error: Status 503")) {
-          errorMessage = "API Key not configured on the server (503). Check the OPENROUTER_API_KEY environment variable.";
-      } else if (err.message.includes("API key missing")) {
-          errorMessage = "Server configuration error: API key is not available on the backend (500).";
+      } else if (err.message.includes("API key is not configured")) {
+          errorMessage = "Server configuration error: The **OPENROUTER_API_KEY** is missing or invalid on the backend (Render).";
       }
       
       setMessages(prev => [...prev, { 
