@@ -4,8 +4,8 @@ import { useLocation } from "react-router-dom";
 import { Send, Bot } from 'lucide-react'; 
 
 // --- START OF CONFIGURATION ---
-// *** FIX APPLIED HERE: Using the correct endpoint /api/generate ***
-const CHAT_PROXY_URL = "/api/generate"; 
+// *** ABSOLUTE URL FIX APPLIED HERE: Using the full URL as requested. ***
+const CHAT_PROXY_URL = "https://ecell-blog-project.onrender.com/api/generate"; 
 
 // Custom theme colors for React styles
 const NEON_BLUE = 'rgb(57, 255, 20)'; 
@@ -13,7 +13,6 @@ const NEON_PINK = '#ff00ff';
 const DARK_BG = 'rgb(10, 10, 10)'; 
 // --- END OF CONFIGURATION ---
 
-// Rule-based QA for instant, non-AI answers
 const ruleBasedQA = {
   "User Actions (How-to)": [
     { question: "How to login?", answer: "Click on the Login button in the navbar and enter your credentials." },
@@ -43,12 +42,12 @@ const Chatbot = () => {
   const chatEndRef = useRef(null);
   const location = useLocation();
     
-  // scroll to bottom when new message arrives
+  // Scroll to bottom when new message arrives
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isProcessing]);
 
-  // auto-hide chatbot and reset when route changes
+  // Auto-hide chatbot and reset when route changes
   useEffect(() => {
     setVisible(false);
     setMessages([{ type: "bot", text: "Hello! I am Scooby Doo, your personal assistant. Click a question below for instant answers, or use the input box to ask our **OpenRouter AI** any general question." }]);
@@ -92,10 +91,9 @@ const Chatbot = () => {
     setIsProcessing(true); 
         
     try {
-      // *** FIX APPLIED HERE: Backend expects 'prompt', not 'message'. ***
+      // FIX: Backend expects 'prompt' key for the input message.
       const apiPayload = {
         prompt: query, 
-        // Removed: model, referer, title as they are managed securely on the backend
       };
             
       const res = await fetch(CHAT_PROXY_URL, {
@@ -104,7 +102,7 @@ const Chatbot = () => {
         body: JSON.stringify(apiPayload)
       });
             
-      // --- IMPORTANT: Safely read response as text first to handle non-JSON server errors ---
+      // --- CRITICAL FIX: Safely read response as text first to handle non-JSON server errors ---
       let responseText = await res.text();
       let data = {};
             
@@ -112,28 +110,25 @@ const Chatbot = () => {
         // Attempt to parse the text as JSON
         data = JSON.parse(responseText);
       } catch (e) {
-        // If parsing fails, the server returned non-JSON data (e.g., HTML error or empty body)
+        // If parsing fails, log the error and inform the user.
         console.error("Server sent non-JSON response:", responseText);
         setMessages(prev => [...prev, { 
             type: "bot", 
-            // Displaying the HTTP status is crucial here
             text: `Error: The server sent an invalid response (HTTP ${res.status}). This often means the backend service is down or crashed. Content received: "${responseText.substring(0, 100)}..."` 
         }]);
-        return; // Exit the function after logging the error
+        return; 
       }
       // --- END SAFE PARSING ---
             
-      // *** FIX APPLIED HERE: Backend returns 'content', not 'reply'. ***
+      // FIX: Backend returns 'content' key for the reply.
       const botReply = data.content; 
       
       if (res.ok && botReply) {
         // Successful response path
         setMessages(prev => [...prev, { type: "bot", text: botReply }]);
       } else {
-        // Handle server-returned JSON error (e.g., 400, 500 status with JSON body or 200 with bad content)
+        // Handle server-returned JSON error (e.g., 400, 500 status with JSON body)
         const errorText = data.error || data.details || 'AI Chat returned an unexpected error or empty response.';
-                
-        // Use the status code from the response for clarity
         const statusMessage = `AI Service Error (Status ${res.status}):`;
 
         setMessages(prev => [...prev, { type: "bot", text: `${statusMessage} ${errorText}. Please check the server logs for API key or network issues.` }]);
