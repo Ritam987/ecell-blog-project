@@ -43,12 +43,8 @@ const Chatbot = () => {
   const chatEndRef = useRef(null);
   const location = useLocation();
 
-  // Scroll to bottom on new message
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
-  // Reset chatbot on route change
   useEffect(() => {
     setVisible(false);
     setMessages([
@@ -56,7 +52,6 @@ const Chatbot = () => {
     ]);
   }, [location.pathname]);
 
-  // Rule-based answer
   const getRuleBasedAnswer = useCallback((question) => {
     const categories = Object.values(ruleBasedQA).flat();
     const match = categories.find(
@@ -65,7 +60,6 @@ const Chatbot = () => {
     return match ? match.answer : null;
   }, []);
 
-  // Handle button click (rule-based)
   const handleQuestionClick = (qa) => {
     if (!isProcessing) {
       setMessages((prev) => [
@@ -76,12 +70,10 @@ const Chatbot = () => {
     }
   };
 
-  // Send message to backend AI
   const sendMessage = async (text) => {
     const query = text.trim();
     if (!query) return;
 
-    // Check rule-based first
     const ruleAnswer = getRuleBasedAnswer(query);
     if (ruleAnswer) {
       setMessages((prev) => [
@@ -93,7 +85,6 @@ const Chatbot = () => {
       return;
     }
 
-    // AI call
     setMessages((prev) => [...prev, { type: "user", text: query }]);
     setInputText("");
     setIsProcessing(true);
@@ -122,23 +113,19 @@ const Chatbot = () => {
     }
   };
 
-  // Handle enter key
   const handleInputSubmit = (e) => {
     if (e.key === "Enter" && inputText.trim() && !isProcessing) {
       sendMessage(inputText);
     }
   };
 
-  // Render message (with code formatting)
   const renderMessage = (msg) => {
-    // If AI sent Markdown code block
     if (msg.text.startsWith("```")) {
       const languageMatch = msg.text.match(/```(\w+)/);
       const lang = languageMatch ? languageMatch[1] : "";
       const code = msg.text.replace(/```[\w]*\n?/, "").replace(/```$/, "");
       return <SyntaxHighlighter language={lang} style={dark}>{code}</SyntaxHighlighter>;
     }
-    // Normal text with line breaks
     return <span style={{ whiteSpace: "pre-wrap" }}>{msg.text}</span>;
   };
 
@@ -146,52 +133,56 @@ const Chatbot = () => {
     <div className="fixed bottom-4 right-4 flex flex-col items-end z-50">
       {/* Floating Robot Icon */}
       <motion.div
-        className="mb-2 bg-neonBlue text-white p-3 rounded-full shadow-lg cursor-pointer flex items-center justify-center"
+        className="mb-2 p-3 rounded-full cursor-pointer flex items-center justify-center"
+        style={{ backgroundColor: NEON_BLUE, boxShadow: `0 0 20px ${NEON_BLUE}` }}
         onClick={() => setVisible(!visible)}
         animate={{ y: [0, -10, 0] }}
         transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-        whileHover={{ scale: 1.2, boxShadow: `0 0 15px ${NEON_BLUE}` }}
+        whileHover={{ scale: 1.2, boxShadow: `0 0 30px ${NEON_BLUE}` }}
         whileTap={{ scale: 0.95 }}
       >
-        <FaRobot size={28} />
+        <FaRobot size={28} color={DARK_BG} />
       </motion.div>
 
-      {/* Chatbox */}
       <AnimatePresence>
         {visible && (
           <motion.div
-            className="w-80 max-w-full bg-darkBg border border-neonBlue shadow-lg rounded-lg flex flex-col overflow-hidden"
+            className="w-80 max-w-full rounded-lg flex flex-col overflow-hidden"
+            style={{ backgroundColor: DARK_BG, border: `2px solid ${NEON_BLUE}`, boxShadow: `0 0 20px ${NEON_BLUE}`, minHeight: "450px" }}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
             transition={{ duration: 0.3 }}
           >
             {/* Header */}
-            <div className="bg-neonBlue text-black px-4 py-2 font-bold rounded-t-lg">
+            <div className="px-4 py-3 font-bold text-lg flex justify-between items-center" style={{ backgroundColor: NEON_BLUE, color: DARK_BG, boxShadow: `0 0 10px ${NEON_BLUE}` }}>
               Scooby Doo Assistant
+              <button onClick={() => setVisible(false)} className="text-xl font-bold hover:text-gray-700 transition-colors">&times;</button>
             </div>
 
             {/* Messages */}
-            <div className="flex-1 p-3 overflow-y-auto custom-scrollbar space-y-2" style={{ maxHeight: "300px" }}>
+            <div className="flex-1 p-3 overflow-y-auto custom-scrollbar space-y-3" style={{ maxHeight: "300px" }}>
               {messages.map((msg, idx) => (
                 <motion.div
                   key={idx}
                   initial={{ opacity: 0, x: msg.type === "user" ? 50 : -50 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className={`p-2 rounded ${msg.type === "user" ? "bg-neonPink text-white text-right self-end" : "bg-neonGreen text-black text-left self-start"}`}
+                  transition={{ duration: 0.3, type: "spring", stiffness: 100 }}
+                  className={`max-w-[80%] p-3 rounded-xl shadow-lg text-sm break-words ${
+                    msg.type === "user" ? "bg-neonPink text-white ml-auto rounded-br-none" : "bg-neonGreen text-black mr-auto rounded-tl-none"
+                  }`}
                 >
                   {renderMessage(msg)}
                 </motion.div>
               ))}
               {isProcessing && (
-                <div className="text-xs text-gray-400 italic">Assistant is typing...</div>
+                <div className="flex items-center p-2 text-xs text-gray-400 italic">Assistant is typing...</div>
               )}
               <div ref={chatEndRef} />
             </div>
 
             {/* Input */}
-            <div className="p-2 border-t border-neonBlue flex gap-2">
+            <div className="p-3 border-t border-neonBlue flex gap-2">
               <input
                 type="text"
                 value={inputText}
@@ -199,30 +190,34 @@ const Chatbot = () => {
                 onKeyDown={handleInputSubmit}
                 placeholder={isProcessing ? "Waiting for response..." : "Ask a question..."}
                 disabled={isProcessing}
-                className="flex-1 px-3 py-2 rounded-full bg-gray-800 text-white outline-none"
-                style={{ border: `1px solid ${NEON_BLUE}` }}
+                className="flex-1 px-3 py-2 rounded-full text-white outline-none"
+                style={{ backgroundColor: "rgba(50,50,50,0.5)", border: `1px solid ${NEON_BLUE}`, boxShadow: `0 0 5px ${NEON_BLUE}` }}
               />
-              <button
+              <motion.button
                 onClick={() => sendMessage(inputText)}
                 disabled={!inputText.trim() || isProcessing}
-                className={`px-3 py-2 rounded-full font-semibold ${!inputText.trim() || isProcessing ? "opacity-50 cursor-not-allowed" : "bg-neonBlue text-black"}`}
+                whileHover={{ scale: !inputText.trim() || isProcessing ? 1 : 1.05 }}
+                whileTap={{ scale: !inputText.trim() || isProcessing ? 1 : 0.95 }}
+                className={`px-3 py-2 rounded-full font-semibold text-xs flex items-center ${!inputText.trim() || isProcessing ? "opacity-50 cursor-not-allowed" : "bg-neonBlue text-black"}`}
+                style={{ boxShadow: `0 0 10px ${NEON_BLUE}` }}
               >
                 Send
-              </button>
+              </motion.button>
             </div>
 
-            {/* Rule-based buttons */}
-            <div className="p-2 border-t border-neonBlue flex flex-col gap-2">
+            {/* Rule-based Buttons */}
+            <div className="p-3 border-t border-neonBlue flex flex-col gap-3">
               {Object.entries(ruleBasedQA).map(([category, qas], idx) => (
                 <div key={idx}>
-                  <div className="font-semibold text-white mb-1">{category}</div>
-                  <div className="flex flex-wrap gap-2 mb-2">
+                  <div className="font-bold text-white mb-1">{category}</div>
+                  <div className="flex flex-wrap gap-2">
                     {qas.map((qa, i) => (
                       <motion.button
                         key={i}
                         onClick={() => handleQuestionClick(qa)}
                         whileHover={{ scale: 1.05, boxShadow: `0 0 10px ${NEON_PINK}` }}
-                        className="bg-gray-700 text-white px-3 py-1 rounded shadow-lg"
+                        className="bg-gray-800 text-white px-3 py-1 rounded shadow-lg"
+                        style={{ border: `1px solid ${NEON_PINK}` }}
                       >
                         {qa.question}
                       </motion.button>
@@ -232,7 +227,6 @@ const Chatbot = () => {
               ))}
             </div>
 
-            {/* Custom scrollbar */}
             <style>{`
               .custom-scrollbar::-webkit-scrollbar { width: 6px; }
               .custom-scrollbar::-webkit-scrollbar-track { background: ${DARK_BG}; border-radius: 4px; }
