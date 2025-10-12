@@ -1,46 +1,36 @@
 // routes/chatbot.js
 const express = require("express");
-const fetch = require("node-fetch"); // npm i node-fetch
-
 const router = express.Router();
+const axios = require("axios");
 
-// POST /api/chatbot
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY; // set this in Render
+
 router.post("/", async (req, res) => {
+  const { message } = req.body;
+  if (!message) return res.status(400).json({ reply: "No message provided." });
+
   try {
-    const { message } = req.body;
-
-    if (!message || message.trim() === "") {
-      return res.status(400).json({ error: "Message is required." });
-    }
-
-    // Call OpenAI GPT-OSS-20B model
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
+    const response = await axios.post(
+      "https://openrouter.ai/api/v1/chat/completions",
+      {
         model: "gpt-oss-20b",
-        messages: [
-          { role: "system", content: "You are a helpful AI assistant for E-Cell Blogging." },
-          { role: "user", content: message },
-        ],
+        messages: [{ role: "user", content: message }],
         temperature: 0.7,
-        max_tokens: 400,
-      }),
-    });
+        max_tokens: 200,
+      },
+      {
+        headers: {
+          "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
-    const data = await response.json();
-    const aiReply = data.choices?.[0]?.message?.content?.trim();
-
-    res.status(200).json({
-      success: true,
-      reply: aiReply || "Sorry, I couldn't understand that. Can you rephrase?",
-    });
+    const reply = response.data.choices[0].message.content;
+    res.json({ reply });
   } catch (err) {
-    console.error("Chatbot backend error:", err);
-    res.status(500).json({ error: "Internal server error." });
+    console.error("Chatbot error:", err.response?.data || err.message);
+    res.json({ reply: "Sorry, I couldn't understand that. Can you rephrase?" });
   }
 });
 
