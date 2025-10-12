@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 // Configuration for the backend API URL
-// NOTE: This URL is taken directly from your component's current implementation.
+// NOTE: This URL should point to your deployed Express backend.
 const API_URL = "https://ecell-blog-project.onrender.com/api/chatbot";
 
 // Hardcoded QA for initial suggestions (Rule-Based functionality is preserved)
@@ -29,7 +29,7 @@ const Chatbot = () => {
   ]);
   const [visible, setVisible] = useState(false);
   const [inputText, setInputText] = useState("");
-  const [isProcessing, setIsProcessing] = useState(false); // New state for loading indicator
+  const [isProcessing, setIsProcessing] = useState(false); // State for loading indicator
   const chatEndRef = useRef(null);
 
   // Scroll to bottom when new message or loading state changes
@@ -37,15 +37,31 @@ const Chatbot = () => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isProcessing]);
 
+  // Utility function to check if the question is in the hardcoded QA
+  const getRuleBasedAnswer = (question) => {
+    const categories = Object.values(ruleBasedQA).flat();
+    const match = categories.find(qa => qa.question.toLowerCase() === question.toLowerCase());
+    return match ? match.answer : null;
+  }
+
   // Handler to send message to the backend API
   const sendMessage = async (text) => {
-    // 1. Add user message and clear input
+    // 1. Check for rule-based answer first (for instant response on suggestion clicks)
+    const ruleAnswer = getRuleBasedAnswer(text);
+    if (ruleAnswer) {
+      setMessages(prev => [...prev, { type: "user", text }]);
+      setMessages(prev => [...prev, { type: "bot", text: ruleAnswer }]);
+      setInputText("");
+      return;
+    }
+    
+    // 2. Add user message and start API processing
     setMessages(prev => [...prev, { type: "user", text }]);
     setInputText("");
     setIsProcessing(true); // Start loading
 
     try {
-      // 2. Send request to the backend
+      // 3. Send request to the backend
       const res = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -54,30 +70,30 @@ const Chatbot = () => {
       
       const data = await res.json();
 
-      // 3. Handle response from the backend
+      // 4. Handle response from the backend
       if (res.ok && data.reply) {
-        // Success: Add bot's reply
+        // Success: Status 2xx and 'reply' field present
         setMessages(prev => [...prev, { type: "bot", text: data.reply }]);
       } else if (data.error) {
-        // Backend/API error (e.g., missing key, rate limit)
-        const errorMessage = data.error.includes("API key is not configured") 
-          ? "Configuration Error: API Key is missing on the server."
+        // Error: Non-2xx status and 'error' field present (from the fixed backend)
+        const errorMessage = data.error.includes("API key is not configured")
+          ? "Configuration Error: The server's API Key is missing. Check backend setup."
           : `Server Error: ${data.error}`;
           
         setMessages(prev => [...prev, { type: "bot", text: errorMessage }]);
       } else {
         // Unknown error structure
-        setMessages(prev => [...prev, { type: "bot", text: "Sorry, I received an unclear response. Can you try again?" }]);
+        setMessages(prev => [...prev, { type: "bot", text: "Sorry, I received an unclear response from the server. Can you rephrase?" }]);
       }
     } catch (err) {
-      // Network failure
-      setMessages(prev => [...prev, { type: "bot", text: "Error contacting the API server. Please check the network connection." }]);
+      // Network failure (connection refused, timeout, etc.)
+      setMessages(prev => [...prev, { type: "bot", text: "Error contacting the API server. Please check your network connection." }]);
       console.error("Frontend fetch error:", err);
     } finally {
       setIsProcessing(false); // Stop loading regardless of outcome
     }
   };
-
+  
   const handleQuestionClick = (qa) => {
     // Prevent clicking while a request is pending
     if (!isProcessing) {
@@ -92,13 +108,14 @@ const Chatbot = () => {
   };
 
   return (
-    <div className="fixed bottom-4 right-4 flex flex-col items-end z-50">
+    <div className="fixed bottom-4 right-4 flex flex-col items-end z-50 font-sans">
       {/* Floating Robot Button */}
       <motion.button
-        className="mb-2 w-16 h-16 rounded-full bg-blue-500 shadow-lg flex items-center justify-center text-3xl font-bold"
+        className="mb-2 w-16 h-16 rounded-full shadow-lg flex items-center justify-center text-3xl font-bold transition-all duration-500"
         style={{
-            backgroundColor: 'rgb(57, 255, 20)', // neonGreen equivalent
-            boxShadow: '0 0 20px rgba(57, 255, 20, 0.7)', // neon shadow
+          backgroundColor: 'rgb(57, 255, 20)', // neonGreen equivalent
+          boxShadow: '0 0 20px rgba(57, 255, 20, 0.7)', // neon shadow
+          color: 'black'
         }}
         onClick={() => setVisible(!visible)}
         whileHover={{ scale: 1.1, boxShadow: "0 0 25px rgba(57, 255, 20, 1)" }}
@@ -114,17 +131,24 @@ const Chatbot = () => {
           <motion.div
             className="w-80 max-w-full bg-gray-900 border border-green-400 shadow-xl rounded-lg flex flex-col overflow-hidden text-gray-100"
             style={{ 
-                boxShadow: '0 0 15px rgba(57, 255, 20, 0.5)',
-                minHeight: '200px'
+              boxShadow: '0 0 15px rgba(57, 255, 20, 0.5)',
+              minHeight: '400px'
             }}
             initial={{ opacity: 0, y: 20, x: 20 }}
             animate={{ opacity: 1, y: 0, x: 0 }}
             exit={{ opacity: 0, y: 20, x: 20 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="bg-green-500 text-gray-900 px-4 py-3 font-extrabold text-lg flex justify-between items-center">
+            {/* Header */}
+            <div 
+              className="px-4 py-3 font-extrabold text-lg flex justify-between items-center text-gray-900"
+              style={{ backgroundColor: 'rgb(57, 255, 20)' }}
+            >
               Blog Assistant
-              <button onClick={() => setVisible(false)} className="text-xl font-bold hover:text-white transition-colors">
+              <button 
+                onClick={() => setVisible(false)} 
+                className="text-xl font-bold hover:text-gray-700 transition-colors"
+              >
                 &times;
               </button>
             </div>
@@ -227,8 +251,8 @@ const Chatbot = () => {
               ))}
             </div>
 
-            {/* Custom Tailwind/CSS Styles (Kept as provided) */}
-            <style jsx>{`
+            {/* Custom Tailwind/CSS Styles (for scrollbar) */}
+            <style>{`
               .custom-scrollbar::-webkit-scrollbar { width: 6px; }
               .custom-scrollbar::-webkit-scrollbar-track { background: #1a1a1a; border-radius: 4px; }
               .custom-scrollbar::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
