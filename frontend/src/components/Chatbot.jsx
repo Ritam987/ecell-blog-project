@@ -76,16 +76,23 @@ const Chatbot = () => {
         "temperature": 0.7
       };
       
+      const requestHeaders = {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${OPENROUTER_API_KEY}`, 
+          "HTTP-Referer": APP_REFERER,
+          "X-Title": APP_TITLE
+      };
+      
+      // === LOGGING ADDED FOR DEBUGGING DNS ERROR ===
+      console.log("Attempting OpenRouter API call...");
+      console.log("Target URL:", OPENROUTER_URL);
+      console.log("Headers (excluding full key):", { ...requestHeaders, "Authorization": requestHeaders.Authorization.substring(0, 10) + '...' });
+      // ===========================================
+
       // 4. Send request directly to OpenRouter
       const res = await fetch(OPENROUTER_URL, {
         method: "POST",
-        headers: { 
-            "Content-Type": "application/json",
-            // Key is hardcoded here
-            "Authorization": `Bearer ${OPENROUTER_API_KEY}`, 
-            "HTTP-Referer": APP_REFERER,
-            "X-Title": APP_TITLE
-        },
+        headers: requestHeaders,
         body: JSON.stringify(apiPayload)
       });
       
