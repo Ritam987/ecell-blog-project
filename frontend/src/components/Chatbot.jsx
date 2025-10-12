@@ -67,7 +67,7 @@ const Chatbot = () => {
     try {
       // 3. Prepare OpenRouter Payload
       const apiPayload = {
-        "model": "gpt-3.5-turbo", // Using a common model
+        "model": "openai/gpt-oss-20b:free", // Using a common model
         "messages": [
             { "role": "system", "content": "You are a helpful assistant for a blogging website. Answer user queries concisely." },
             { "role": "user", "content": text }
