@@ -1,6 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
+// Configuration for the backend API URL
+// NOTE: This URL is taken directly from your component's current implementation.
+const API_URL = "https://ecell-blog-project.onrender.com/api/chatbot";
+
+// Hardcoded QA for initial suggestions (Rule-Based functionality is preserved)
 const ruleBasedQA = {
   "User Actions": [
     { question: "How to login?", answer: "Click on the Login button in the navbar and enter your credentials." },
@@ -24,47 +29,81 @@ const Chatbot = () => {
   ]);
   const [visible, setVisible] = useState(false);
   const [inputText, setInputText] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false); // New state for loading indicator
   const chatEndRef = useRef(null);
 
-  // scroll to bottom when new message
+  // Scroll to bottom when new message or loading state changes
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, isProcessing]);
 
-  // Send message to backend
+  // Handler to send message to the backend API
   const sendMessage = async (text) => {
+    // 1. Add user message and clear input
     setMessages(prev => [...prev, { type: "user", text }]);
     setInputText("");
+    setIsProcessing(true); // Start loading
 
     try {
-      const res = await fetch("https://ecell-blog-project.onrender.com/api/chatbot", {
+      // 2. Send request to the backend
+      const res = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: text })
       });
+      
       const data = await res.json();
 
-      if (data.reply) {
+      // 3. Handle response from the backend
+      if (res.ok && data.reply) {
+        // Success: Add bot's reply
         setMessages(prev => [...prev, { type: "bot", text: data.reply }]);
+      } else if (data.error) {
+        // Backend/API error (e.g., missing key, rate limit)
+        const errorMessage = data.error.includes("API key is not configured") 
+          ? "Configuration Error: API Key is missing on the server."
+          : `Server Error: ${data.error}`;
+          
+        setMessages(prev => [...prev, { type: "bot", text: errorMessage }]);
       } else {
-        setMessages(prev => [...prev, { type: "bot", text: "Sorry, I couldn't understand that. Can you rephrase?" }]);
+        // Unknown error structure
+        setMessages(prev => [...prev, { type: "bot", text: "Sorry, I received an unclear response. Can you try again?" }]);
       }
     } catch (err) {
-      setMessages(prev => [...prev, { type: "bot", text: "Error contacting server. Try again." }]);
-      console.error(err);
+      // Network failure
+      setMessages(prev => [...prev, { type: "bot", text: "Error contacting the API server. Please check the network connection." }]);
+      console.error("Frontend fetch error:", err);
+    } finally {
+      setIsProcessing(false); // Stop loading regardless of outcome
     }
   };
 
-  const handleQuestionClick = (qa) => sendMessage(qa.question);
+  const handleQuestionClick = (qa) => {
+    // Prevent clicking while a request is pending
+    if (!isProcessing) {
+      sendMessage(qa.question);
+    }
+  };
+
+  const handleSend = () => {
+    if (inputText.trim() && !isProcessing) {
+        sendMessage(inputText);
+    }
+  };
 
   return (
     <div className="fixed bottom-4 right-4 flex flex-col items-end z-50">
       {/* Floating Robot Button */}
       <motion.button
-        className="mb-2 w-16 h-16 rounded-full bg-neonBlue shadow-neon flex items-center justify-center"
+        className="mb-2 w-16 h-16 rounded-full bg-blue-500 shadow-lg flex items-center justify-center text-3xl font-bold"
+        style={{
+            backgroundColor: 'rgb(57, 255, 20)', // neonGreen equivalent
+            boxShadow: '0 0 20px rgba(57, 255, 20, 0.7)', // neon shadow
+        }}
         onClick={() => setVisible(!visible)}
-        whileHover={{ scale: 1.2, boxShadow: "0 0 20px #39ff14" }}
-        animate={{ y: [0, -10, 0] }} transition={{ repeat: Infinity, duration: 2 }}
+        whileHover={{ scale: 1.1, boxShadow: "0 0 25px rgba(57, 255, 20, 1)" }}
+        animate={{ y: [0, -10, 0] }} 
+        transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
       >
         🤖
       </motion.button>
@@ -73,62 +112,112 @@ const Chatbot = () => {
       <AnimatePresence>
         {visible && (
           <motion.div
-            className="w-80 max-w-full bg-darkBg border border-neonBlue shadow-neon rounded-lg flex flex-col overflow-hidden"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
+            className="w-80 max-w-full bg-gray-900 border border-green-400 shadow-xl rounded-lg flex flex-col overflow-hidden text-gray-100"
+            style={{ 
+                boxShadow: '0 0 15px rgba(57, 255, 20, 0.5)',
+                minHeight: '200px'
+            }}
+            initial={{ opacity: 0, y: 20, x: 20 }}
+            animate={{ opacity: 1, y: 0, x: 0 }}
+            exit={{ opacity: 0, y: 20, x: 20 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="bg-neonBlue text-white px-4 py-2 font-bold rounded-t-lg">Chatbot</div>
-            <div className="flex-1 p-4 overflow-y-auto custom-scrollbar space-y-2" style={{ maxHeight: "300px" }}>
+            <div className="bg-green-500 text-gray-900 px-4 py-3 font-extrabold text-lg flex justify-between items-center">
+              Blog Assistant
+              <button onClick={() => setVisible(false)} className="text-xl font-bold hover:text-white transition-colors">
+                &times;
+              </button>
+            </div>
+            
+            {/* Message Display Area */}
+            <div className="flex-1 p-3 overflow-y-auto custom-scrollbar space-y-3" style={{ maxHeight: "300px" }}>
               {messages.map((msg, idx) => (
                 <motion.div
                   key={idx}
                   initial={{ opacity: 0, x: msg.type === "user" ? 50 : -50 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className={`p-2 rounded ${
+                  transition={{ duration: 0.3, type: "spring", stiffness: 100 }}
+                  className={`max-w-[80%] p-3 rounded-xl shadow-md ${
                     msg.type === "user"
-                      ? "bg-neonPink text-white text-right self-end"
-                      : "bg-neonGreen text-black text-left self-start"
+                      ? "bg-purple-600 text-white ml-auto rounded-br-none"
+                      : "bg-gray-700 text-gray-50 mr-auto rounded-tl-none"
                   }`}
                 >
                   {msg.text}
                 </motion.div>
               ))}
+              
+              {/* Loading/Typing Indicator */}
+              <AnimatePresence>
+                {isProcessing && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex mr-auto items-center p-3 rounded-xl bg-gray-700 max-w-[50%]"
+                  >
+                    <span className="animate-pulse text-sm">Assistant is typing...</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              
               <div ref={chatEndRef} />
             </div>
 
-            {/* Input */}
-            <div className="p-2 border-t border-neonBlue flex gap-2">
+            {/* Input and Send Button */}
+            <div className="p-3 border-t border-green-500 flex gap-2">
               <input
                 type="text"
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && inputText.trim() && sendMessage(inputText)}
-                placeholder="Type your question..."
-                className="flex-1 px-2 py-1 rounded bg-gray-800 text-white outline-none"
+                onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                placeholder={isProcessing ? "Waiting for response..." : "Type your question..."}
+                disabled={isProcessing}
+                className={`flex-1 px-3 py-2 rounded-full bg-gray-800 text-white outline-none transition-all duration-300 ${
+                    isProcessing ? 'opacity-70 cursor-not-allowed' : 'focus:ring-2 focus:ring-green-400'
+                }`}
               />
-              <button
-                onClick={() => inputText.trim() && sendMessage(inputText)}
-                className="px-3 py-1 bg-neonBlue text-darkBg rounded shadow-neon"
+              <motion.button
+                onClick={handleSend}
+                disabled={!inputText.trim() || isProcessing}
+                whileHover={{ scale: !isProcessing ? 1.05 : 1 }}
+                whileTap={{ scale: !isProcessing ? 0.95 : 1 }}
+                className={`px-4 py-2 rounded-full font-semibold transition-colors duration-200 ${
+                    !inputText.trim() || isProcessing
+                      ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                      : "bg-green-500 text-gray-900 shadow-md hover:bg-green-400"
+                }`}
               >
-                Send
-              </button>
+                {isProcessing ? (
+                    <svg className="animate-spin h-5 w-5 text-gray-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                ) : (
+                    'Send'
+                )}
+              </motion.button>
             </div>
 
-            {/* Categorized Questions */}
-            <div className="p-2 border-t border-neonBlue flex flex-col gap-2">
+            {/* Categorized Questions/Suggestions */}
+            <div className="p-3 border-t border-green-500 flex flex-col gap-3">
+              <div className="font-semibold text-green-400 text-sm">Suggested Topics:</div>
               {Object.entries(ruleBasedQA).map(([category, qas], idx) => (
-                <div key={idx}>
-                  <div className="font-semibold text-white mb-1">{category}</div>
+                <div key={idx} className="border-t border-gray-800 pt-2 first:border-t-0 first:pt-0">
+                  <div className="font-bold text-white mb-1 text-sm">{category}</div>
                   <div className="flex flex-wrap gap-2">
                     {qas.map((qa, i) => (
                       <motion.button
                         key={i}
                         onClick={() => handleQuestionClick(qa)}
-                        whileHover={{ scale: 1.05, boxShadow: "0 0 10px #ff00ff" }}
-                        className="bg-gray-700 text-white px-3 py-1 rounded shadow-neon transition-all duration-300"
+                        disabled={isProcessing}
+                        whileHover={{ scale: isProcessing ? 1 : 1.05 }}
+                        whileTap={{ scale: isProcessing ? 1 : 0.98 }}
+                        className={`text-xs px-2 py-1 rounded-full border border-gray-600 transition-all duration-300 ${
+                            isProcessing 
+                                ? "bg-gray-800 text-gray-500 cursor-not-allowed" 
+                                : "bg-gray-700 text-green-300 hover:bg-gray-600"
+                        }`}
                       >
                         {qa.question}
                       </motion.button>
@@ -138,6 +227,7 @@ const Chatbot = () => {
               ))}
             </div>
 
+            {/* Custom Tailwind/CSS Styles (Kept as provided) */}
             <style jsx>{`
               .custom-scrollbar::-webkit-scrollbar { width: 6px; }
               .custom-scrollbar::-webkit-scrollbar-track { background: #1a1a1a; border-radius: 4px; }
