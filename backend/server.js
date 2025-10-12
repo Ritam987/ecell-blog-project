@@ -4,7 +4,7 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const path = require("path");
 const { GridFSBucket } = require("mongodb");
-const fetch = require("node-fetch"); // <-- NEW: Required for making API calls
+const fetch = require("node-fetch"); // <-- Required for making API calls
 
 dotenv.config();
 const app = express();
@@ -31,8 +31,8 @@ app.use("/api/blogs", blogRoutes);
 app.use("/api/users", userRoutes);
 
 // =========================================================================
-// NEW: CHATBOT PROXY ROUTE INTEGRATION
-// This route now handles the secure connection to OpenRouter.
+// CHATBOT PROXY ROUTE (Configured to match user's provided fetch structure)
+// This route securely proxies the request to OpenRouter.
 // =========================================================================
 app.post("/api/chatbot", async (req, res) => {
     // 1. Check for API Key configuration
@@ -41,33 +41,37 @@ app.post("/api/chatbot", async (req, res) => {
         return res.status(500).json({ error: 'Server configuration error: API key missing.' });
     }
 
-    // 2. Extract parameters passed from the frontend (chatbot.jsx)
-    const { user_prompt, model, referer, title } = req.body;
+    // 2. Extract required data from the frontend request
+    // NOTE: Model is hardcoded below to match the exact structure you provided.
+    const { user_prompt, referer, title } = req.body;
 
     if (!user_prompt) {
         return res.status(400).json({ error: 'Missing user_prompt in request body.' });
     }
 
-    // 3. Construct the payload required by the OpenRouter API
+    // 3. Construct the payload using the hardcoded model and dynamic user prompt
     const openRouterPayload = {
-        model: model || "openai/gpt-oss-20b:free", 
+        // Hardcoded model as requested in your structure
+        model: "openai/gpt-oss-20b:free", 
         messages: [
-            { "role": "system", "content": "You are a helpful assistant for a blogging website. Answer user queries concisely." },
-            { "role": "user", "content": user_prompt }
-        ],
-        max_tokens: 500,
-        temperature: 0.7
+            { 
+                "role": "user", 
+                "content": user_prompt // Dynamic user prompt from the frontend
+            }
+        ]
     };
 
     try {
         // 4. Make the external, secure request to OpenRouter
-        const response = await fetch("https://openrouter.ai/api/v1", {
+        const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"; 
+        
+        const response = await fetch(OPENROUTER_ENDPOINT, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 // API key is securely accessed from the server's environment
                 'Authorization': `Bearer ${OPENROUTER_API_KEY}`, 
-                // Pass required OpenRouter usage headers
+                // Pass required OpenRouter usage headers (referer/title)
                 'HTTP-Referer': referer, 
                 'X-Title': title
             },
@@ -104,17 +108,17 @@ app.post("/api/chatbot", async (req, res) => {
 // MongoDB connection
 const mongoURI = process.env.MONGO_URI;
 mongoose
-  .connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => {
-    console.log("MongoDB connected");
+    .connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
+    .then(() => {
+        console.log("MongoDB connected");
 
-    // GridFS bucket setup for blog images
-    const db = mongoose.connection.db;
-    const bucketName = "blogImages";
-    app.locals.gfsBucket = new GridFSBucket(db, { bucketName });
-    console.log(`GridFS bucket "${bucketName}" initialized`);
-  })
-  .catch((err) => console.error("MongoDB connection error:", err));
+        // GridFS bucket setup for blog images
+        const db = mongoose.connection.db;
+        const bucketName = "blogImages";
+        app.locals.gfsBucket = new GridFSBucket(db, { bucketName });
+        console.log(`GridFS bucket "${bucketName}" initialized`);
+    })
+    .catch((err) => console.error("MongoDB connection error:", err));
 
 // Default route
 app.get("/", (req, res) => res.send("E-Cell Blogging Backend is running!"));
@@ -122,4 +126,3 @@ app.get("/", (req, res) => res.send("E-Cell Blogging Backend is running!"));
 // Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
