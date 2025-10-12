@@ -92,13 +92,17 @@ const Chatbot = () => {
             body: JSON.stringify(apiPayload)
           });
 
-          // 3. Attempt to read JSON, but fall back to raw text if it fails
+          // FIX: Clone the response stream before reading it. 
+          // This allows us to try res.json() and fall back to rawText if parsing fails.
+          const clonedRes = res.clone(); 
           let data;
           let rawText = null;
+          
           try {
             data = await res.json();
           } catch (e) {
-            rawText = await res.text();
+            // Read raw text from the cloned stream for detailed error reporting
+            rawText = await clonedRes.text();
             throw new Error(`Server Response Error. Raw text returned: "${rawText.substring(0, 100)}..."`);
           }
           
@@ -128,9 +132,10 @@ const Chatbot = () => {
       
       // Look for the specific error from the raw text fallback
       if (err.message.includes("Raw text returned")) {
-          errorMessage = `Backend Proxy returned an unexpected response! Please check server logs. ${err.message}`;
+          // This message now contains the actual, non-JSON response from the server!
+          errorMessage = `Backend Proxy returned an unexpected response! This is likely a backend crash (500) or misconfiguration. ${err.message}`;
       } else if (err.message.includes("Proxy Error: Status 500")) {
-          errorMessage = "Internal Server Error (500). Please check your backend logs for a crash.";
+          errorMessage = "Internal Server Error (500). The backend proxy crashed. Please check your server logs for a stack trace.";
       }
       
       setMessages(prev => [...prev, { 
@@ -241,7 +246,7 @@ const Chatbot = () => {
               <input
                 type="text"
                 value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
+                onChange={(e) => e.target.value.length <= 150 && setInputText(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSend()}
                 placeholder={isProcessing ? "Waiting for response..." : "Type your question..."}
                 disabled={isProcessing}
