@@ -1,14 +1,15 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-// --- START OF HARDCODED CONFIGURATION (OpenRouter) ---
-// WARNING: This API key is publicly visible in the browser source code.
-const OPENROUTER_API_KEY = "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"; 
-// CORRECT OpenRouter API endpoint for chat completions
-const OPENROUTER_URL = "https://openrouter.ai/api/v1"; 
+// --- START OF CONFIGURATION (Proxy Endpoint) ---
+// This is the relative path to the backend proxy route in your updated server.js file.
+const PROXY_URL = "/api/chatbot"; 
+
+// These fields are passed to the proxy server to set the OpenRouter headers
 const APP_REFERER = "https://ecell-blog.onrender.com/"; 
 const APP_TITLE = "Blog Assistant";
-// --- END OF HARDCODED CONFIGURATION ---
+const MODEL = "openai/gpt-oss-20b:free";
+// --- END OF CONFIGURATION ---
 
 // Hardcoded QA for initial suggestions (Rule-Based functionality is preserved)
 const ruleBasedQA = {
@@ -34,7 +35,7 @@ const Chatbot = () => {
   ]);
   const [visible, setVisible] = useState(false);
   const [inputText, setInputText] = useState("");
-  const [isProcessing, setIsProcessing] = useState(false); // State for loading indicator
+  const [isProcessing, setIsProcessing] = useState(false); 
   const chatEndRef = useRef(null);
 
   // Scroll to bottom when new message or loading state changes
@@ -49,9 +50,9 @@ const Chatbot = () => {
     return match ? match.answer : null;
   }
 
-  // Handler to send message directly to the OpenRouter API
+  // Handler to send message to the custom backend proxy
   const sendMessage = async (text) => {
-    // 1. Check for rule-based answer first (for instant response on suggestion clicks)
+    
     const ruleAnswer = getRuleBasedAnswer(text);
     if (ruleAnswer) {
       setMessages(prev => [...prev, { type: "user", text }]);
@@ -60,42 +61,33 @@ const Chatbot = () => {
       return;
     }
     
-    // 2. Add user message and start API processing
     setMessages(prev => [...prev, { type: "user", text }]);
     setInputText("");
-    setIsProcessing(true); // Start loading
+    setIsProcessing(true); 
     
     try {
-      // 3. Prepare OpenRouter Payload
+      // 1. Prepare Payload for the Backend Proxy
       const apiPayload = {
-        "model": "openai/gpt-oss-20b:free", // Using the requested free OpenRouter model
-        "messages": [
-            { "role": "system", "content": "You are a helpful assistant for a blogging website. Answer user queries concisely." },
-            { "role": "user", "content": text }
-        ],
-        "max_tokens": 500,
-        "temperature": 0.7
+        user_prompt: text, // Send the prompt as simple text to the backend
+        model: MODEL, 
+        referer: APP_REFERER,
+        title: APP_TITLE,
       };
       
       const requestHeaders = {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${OPENROUTER_API_KEY}`, 
-          "HTTP-Referer": APP_REFERER,
-          "X-Title": APP_TITLE
       };
       
       const MAX_RETRIES = 3;
       let lastError = null;
 
       for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-        // Logging is kept for debugging the persistent network issue
-        console.log(`Attempting OpenRouter API call (Attempt ${attempt + 1}/${MAX_RETRIES})...`);
-        console.log("Target URL:", OPENROUTER_URL);
-        console.log("Headers (excluding full key):", { ...requestHeaders, "Authorization": requestHeaders.Authorization.substring(0, 10) + '...' });
+        console.log(`Attempting Proxy API call to ${PROXY_URL} (Attempt ${attempt + 1}/${MAX_RETRIES})...`);
 
         try {
-          // 4. Send request directly to OpenRouter
-          const res = await fetch(OPENROUTER_URL, {
+          // 2. Send request to the PROXY ENDPOINT
+          // This call will be successful because it is local (or same-origin)
+          const res = await fetch(PROXY_URL, {
             method: "POST",
             headers: requestHeaders,
             body: JSON.stringify(apiPayload)
@@ -103,43 +95,35 @@ const Chatbot = () => {
           
           if (res.ok) {
             const data = await res.json();
-            // 5. Handle response (Success path)
-            if (data.choices && data.choices.length > 0) {
-              const reply = data.choices[0].message.content;
-              setMessages(prev => [...prev, { type: "bot", text: reply }]);
+            // 3. Handle response (Success path) - expecting the proxy to return a simple { reply: "..." } object
+            if (data.reply) {
+              setMessages(prev => [...prev, { type: "bot", text: data.reply }]);
               return; // Exit function on success
-            } else if (data.error) {
-              // API Error from OpenRouter 
-              throw new Error(data.error.message || `API Error (${res.status}): ${JSON.stringify(data)}`);
             }
           }
           
-          // Non-OK status code (e.g., 4xx, 5xx)
-          throw new Error(`HTTP Error Status: ${res.status}`);
+          // Non-OK status code or malformed response from proxy
+          throw new Error(`Proxy Error: Status ${res.status} or unexpected response format.`);
 
         } catch (err) {
           lastError = err;
           if (attempt < MAX_RETRIES - 1) {
-            const delay = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s delay
+            const delay = Math.pow(2, attempt) * 1000;
             await new Promise(resolve => setTimeout(resolve, delay));
           } else {
-            // Last attempt failed
             throw lastError;
           }
         }
       }
-    // Catch block handles final failure (after all retries)
     } catch (err) {
-      // Network failure or final API error after retries
-      setMessages(prev => [...prev, { type: "bot", text: "Error contacting the OpenRouter service after multiple retries. The issue is almost certainly network-related (DNS/Firewall) and requires a backend proxy to fix." }]);
+      setMessages(prev => [...prev, { type: "bot", text: "Error contacting the backend chat service. Please ensure the proxy server is deployed, running, and accessible at the configured URL." }]);
       console.error("Frontend fetch error (Final Failure):", err);
     } finally {
-      setIsProcessing(false); // Stop loading regardless of outcome
+      setIsProcessing(false); 
     }
   };
   
   const handleQuestionClick = (qa) => {
-    // Prevent clicking while a request is pending
     if (!isProcessing) {
       sendMessage(qa.question);
     }
@@ -157,8 +141,8 @@ const Chatbot = () => {
       <motion.button
         className="mb-2 w-16 h-16 rounded-full shadow-lg flex items-center justify-center text-3xl font-bold transition-all duration-500"
         style={{
-          backgroundColor: 'rgb(57, 255, 20)', // neonGreen equivalent
-          boxShadow: '0 0 20px rgba(57, 255, 20, 0.7)', // neon shadow
+          backgroundColor: 'rgb(57, 255, 20)', 
+          boxShadow: '0 0 20px rgba(57, 255, 20, 0.7)', 
           color: 'black'
         }}
         onClick={() => setVisible(!visible)}
@@ -185,8 +169,7 @@ const Chatbot = () => {
           >
             {/* Header */}
             <div 
-              className="px-4 py-3 font-extrabold text-lg flex justify-between items-center text-gray-900"
-              style={{ backgroundColor: 'rgb(57, 255, 20)' }}
+              className={`px-4 py-3 font-extrabold text-lg flex justify-between items-center text-gray-900 bg-green-400`}
             >
               <span>Blog Assistant</span>
               <button 
