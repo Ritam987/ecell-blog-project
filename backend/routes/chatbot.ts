@@ -1,10 +1,15 @@
+// This file defines the Express Router for handling chatbot requests.
+// It is written in TypeScript/ESM syntax for proper integration, 
+// but uses CommonJS export for compatibility with server.js.
+
 import express, { Request, Response, Router } from 'express';
-import fetch from 'node-fetch'; // NOTE: Requires 'npm install node-fetch'
+// NOTE: node-fetch is typically not needed in modern Node.js environments (v18+),
+// as the native global fetch API is available, but keeping for compatibility.
+import fetch from 'node-fetch'; 
 
 const router: Router = express.Router();
 
 // --- Configuration (Read from environment variables) ---
-// IMPORTANT: These must be set securely on your hosting platform (Render).
 const OPENROUTER_API_KEY: string | undefined = process.env.OPENROUTER_API_KEY; 
 const APP_REFERER: string = process.env.APP_URL || 'https://ecell-blog-project.onrender.com'; 
 const APP_TITLE: string = "E-Cell Blog Assistant";
@@ -14,7 +19,6 @@ const OPENROUTER_ENDPOINT: string = "https://openrouter.ai/api/v1/chat/completio
 
 
 router.post('/', async (req: Request, res: Response) => {
-    // We expect the frontend to send the user's message in the 'message' field.
     const userMessage: string = req.body.message; 
 
     // 1. Validation and Key Check
@@ -103,5 +107,6 @@ router.post('/', async (req: Request, res: Response) => {
     }
 });
 
-// Export the router using ES Module syntax
-export default router;
+// IMPORTANT FIX: Export the router using CommonJS module.exports syntax
+// This resolves the "Cannot find module" error when the file is loaded via require()
+module.exports = router;
