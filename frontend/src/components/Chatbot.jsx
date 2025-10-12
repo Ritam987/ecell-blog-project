@@ -1,14 +1,13 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Utility function to safely access environment variables, preventing ReferenceError
-// in environments (like the browser/Canvas) where 'process' is not defined.
-const getEnvVar = (name, fallback) => {
-    if (typeof process !== 'undefined' && process.env && process.env[name]) {
-        return process.env[name];
-    }
-    return fallback;
-};
+// --- START OF HARDCODED CONFIGURATION ---
+// WARNING: This API key is publicly visible in the browser source code.
+const OPENROUTER_API_KEY = "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"; 
+const OPENROUTER_URL = "https://api.openrouter.ai/v1/chat/completions";
+const APP_REFERER = "https://ecell-blog.onrender.com/"; 
+const APP_TITLE = "Blog Assistant";
+// --- END OF HARDCODED CONFIGURATION ---
 
 // Hardcoded QA for initial suggestions (Rule-Based functionality is preserved)
 const ruleBasedQA = {
@@ -29,12 +28,6 @@ const ruleBasedQA = {
 };
 
 const Chatbot = () => {
-  // Configuration moved inside the component to prevent ReferenceError
-  const OPENROUTER_API_KEY = getEnvVar("REACT_APP_OPENROUTER_API_KEY", "PLACEHOLDER_NOT_SET"); 
-  const OPENROUTER_URL = "https://api.openrouter.ai/v1/chat/completions";
-  const APP_REFERER = getEnvVar("REACT_APP_APP_REFERER", "https://ecell-blog.onrender.com"); 
-  const APP_TITLE = getEnvVar("REACT_APP_APP_TITLE", "Blog Assistant");
-  
   const [messages, setMessages] = useState([
     { type: "bot", text: "Hello! I am your assistant. Click a question below or ask me anything." }
   ]);
@@ -70,13 +63,6 @@ const Chatbot = () => {
     setMessages(prev => [...prev, { type: "user", text }]);
     setInputText("");
     setIsProcessing(true); // Start loading
-
-    // Runtime Check to ensure the key was set during the build process
-    if (OPENROUTER_API_KEY === "PLACEHOLDER_NOT_SET") {
-        setIsProcessing(false);
-        setMessages(prev => [...prev, { type: "bot", text: "Configuration Error: API key was not injected during the build. Check your Render Environment variables." }]);
-        return;
-    }
     
     try {
       // 3. Prepare OpenRouter Payload
@@ -95,7 +81,7 @@ const Chatbot = () => {
         method: "POST",
         headers: { 
             "Content-Type": "application/json",
-            // Key is exposed here via the Authorization header
+            // Key is hardcoded here
             "Authorization": `Bearer ${OPENROUTER_API_KEY}`, 
             "HTTP-Referer": APP_REFERER,
             "X-Title": APP_TITLE
@@ -177,7 +163,7 @@ const Chatbot = () => {
               className="px-4 py-3 font-extrabold text-lg flex justify-between items-center text-gray-900"
               style={{ backgroundColor: 'rgb(57, 255, 20)' }}
             >
-              Blog Assistant
+              <span>Blog Assistant</span>
               <button 
                 onClick={() => setVisible(false)} 
                 className="text-xl font-bold hover:text-gray-700 transition-colors"
@@ -188,6 +174,7 @@ const Chatbot = () => {
             
             {/* Message Display Area */}
             <div className="flex-1 p-3 overflow-y-auto custom-scrollbar space-y-3" style={{ maxHeight: "300px" }}>
+              
               {messages.map((msg, idx) => (
                 <motion.div
                   key={idx}
