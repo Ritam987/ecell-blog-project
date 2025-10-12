@@ -1,27 +1,41 @@
 // routes/chatbot.js
 const express = require("express");
-const router = express.Router();
 const axios = require("axios");
+const router = express.Router();
 
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY; // set this in Render
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
+// POST /api/chatbot
 router.post("/", async (req, res) => {
   const { message } = req.body;
-  if (!message) return res.status(400).json({ reply: "No message provided." });
+
+  if (!message || message.trim() === "") {
+    return res.status(400).json({ error: "Message is required" });
+  }
 
   try {
+    // Send user message to OpenRouter GPT-OSS-20B
     const response = await axios.post(
-      "https://openrouter.ai/api/v1/chat/completions",
+      "https://api.openrouter.ai/v1/chat/completions",
       {
         model: "gpt-oss-20b",
-        messages: [{ role: "user", content: message }],
-        temperature: 0.7,
-        max_tokens: 200,
+        messages: [
+          {
+            role: "system",
+            content: "You are a helpful assistant for a blogging website. Answer user queries clearly and politely."
+          },
+          {
+            role: "user",
+            content: message
+          }
+        ],
+        max_tokens: 500,
+        temperature: 0.7
       },
       {
         headers: {
           "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
-          "Content-Type": "application/json",
+          "Content-Type": "application/json"
         },
       }
     );
@@ -30,7 +44,7 @@ router.post("/", async (req, res) => {
     res.json({ reply });
   } catch (err) {
     console.error("Chatbot error:", err.response?.data || err.message);
-    res.json({ reply: "Sorry, I couldn't understand that. Can you rephrase?" });
+    res.status(500).json({ reply: "Sorry, something went wrong. Try again later." });
   }
 });
 
