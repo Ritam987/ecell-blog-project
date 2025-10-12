@@ -2,21 +2,22 @@ import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 // --- START OF CONFIGURATION (Proxy Endpoint) ---
-// This is the relative path to the backend proxy route in your updated server.js file.
-// FIX: Changed from /api/chatbot to /api/generate to match the backend route.
-const PROXY_URL = "/api/generate"; 
+// IMPORTANT: This URL MUST match the route in your server.js file.
+// Backend Route: app.post("/api/chatbot", ...)
+const PROXY_URL = "/api/chatbot"; 
 
 // These fields are passed to the proxy server to set the OpenRouter headers
-const APP_REFERER = "https://ecell-blog.onrender.com/"; 
+// --- UPDATED to use the explicit backend URL ---
+const APP_REFERER = "https://ecell-blog-project.onrender.com"; 
 const APP_TITLE = "Blog Assistant";
-const MODEL = "openai/gpt-oss-20b:free";
+// NOTE: Although the backend hardcodes the model, we send this for completeness.
+const MODEL = "openai/gpt-oss-20b:free"; 
 // --- END OF CONFIGURATION ---
 
-// Hardcoded QA for initial suggestions (Rule-Based functionality is preserved)
+// Hardcoded QA for initial suggestions (Rule-Based functionality)
 const ruleBasedQA = {
   "User Actions": [
     { question: "How to login?", answer: "Click on the Login button in the navbar and enter your credentials." },
-    // FIX: Added missing quote marks and corrected the answer text.
     { question: "How to register?", answer: "Click on Register, fill in the details, and submit." },
     { question: "How to logout?", answer: "Click on your profile and select Logout." },
     { question: "How to create a blog?", answer: "Click on 'Create Blog' in the navbar and fill out the form." },
@@ -69,8 +70,9 @@ const Chatbot = () => {
     
     try {
       // 1. Prepare Payload for the Backend Proxy
+      // Keys MUST match what server.js is expecting: user_prompt, model, referer, title
       const apiPayload = {
-        user_prompt: text, // Send the prompt as simple text to the backend
+        user_prompt: text, 
         model: MODEL, 
         referer: APP_REFERER,
         title: APP_TITLE,
@@ -94,7 +96,7 @@ const Chatbot = () => {
             body: JSON.stringify(apiPayload)
           });
 
-          // FIX IS HERE: Clone the response stream before reading it. 
+          // Clone the response stream before reading it to handle parsing errors
           const clonedRes = res.clone(); 
           let data;
           let rawText = null;
@@ -108,12 +110,12 @@ const Chatbot = () => {
           }
           
           if (res.ok) {
-            // 4. Handle response (Success path)
+            // 4. Handle successful response. The server.js returns { reply: "..." }
             if (data.reply) {
               setMessages(prev => [...prev, { type: "bot", text: data.reply }]);
               return; // Exit function on success
             }
-            // The backend is expected to return { content: "..." }
+            // Fallback check (less likely if server.js is correct, but safe)
             if (data.content) { 
                 setMessages(prev => [...prev, { type: "bot", text: data.content }]);
                 return; // Exit function on success
@@ -125,23 +127,27 @@ const Chatbot = () => {
 
         } catch (err) {
           lastError = err;
+          // Implement exponential backoff for retries
           if (attempt < MAX_RETRIES - 1) {
             const delay = Math.pow(2, attempt) * 1000;
             await new Promise(resolve => setTimeout(resolve, delay));
           } else {
-            throw lastError;
+            throw lastError; // Throw the last error after exhausting retries
           }
         }
       }
     } catch (err) {
       let errorMessage = `AI Service connection failed. Reason: ${err.message}`;
       
-      // Look for the specific error from the raw text fallback
+      // Provide better feedback for common backend errors
       if (err.message.includes("Raw text returned")) {
-          // If this message appears, it contains the backend's unexpected output
           errorMessage = `Backend Proxy returned an unexpected response! This is likely a backend crash (500) or misconfiguration. ${err.message}`;
       } else if (err.message.includes("Proxy Error: Status 500")) {
           errorMessage = "Internal Server Error (500). The backend proxy crashed. Please check your server logs for a stack trace.";
+      } else if (err.message.includes("Proxy Error: Status 503")) {
+          errorMessage = "API Key not configured on the server (503). Check the OPENROUTER_API_KEY environment variable.";
+      } else if (err.message.includes("API key missing")) {
+          errorMessage = "Server configuration error: API key is not available on the backend (500).";
       }
       
       setMessages(prev => [...prev, { 
