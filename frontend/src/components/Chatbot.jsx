@@ -86,24 +86,32 @@ const Chatbot = () => {
 
         try {
           // 2. Send request to the PROXY ENDPOINT
-          // This call will be successful because it is local (or same-origin)
           const res = await fetch(PROXY_URL, {
             method: "POST",
             headers: requestHeaders,
             body: JSON.stringify(apiPayload)
           });
+
+          // 3. Attempt to read JSON, but fall back to raw text if it fails
+          let data;
+          let rawText = null;
+          try {
+            data = await res.json();
+          } catch (e) {
+            rawText = await res.text();
+            throw new Error(`Server Response Error. Raw text returned: "${rawText.substring(0, 100)}..."`);
+          }
           
           if (res.ok) {
-            const data = await res.json();
-            // 3. Handle response (Success path) - expecting the proxy to return a simple { reply: "..." } object
+            // 4. Handle response (Success path)
             if (data.reply) {
               setMessages(prev => [...prev, { type: "bot", text: data.reply }]);
               return; // Exit function on success
             }
           }
           
-          // Non-OK status code or malformed response from proxy
-          throw new Error(`Proxy Error: Status ${res.status} or unexpected response format.`);
+          // Non-OK status code from proxy
+          throw new Error(`Proxy Error: Status ${res.status} - ${data.error || 'Unknown error'}`);
 
         } catch (err) {
           lastError = err;
@@ -116,7 +124,19 @@ const Chatbot = () => {
         }
       }
     } catch (err) {
-      setMessages(prev => [...prev, { type: "bot", text: "Error contacting the backend chat service. Please ensure the proxy server is deployed, running, and accessible at the configured URL." }]);
+      let errorMessage = `AI Service connection failed. Reason: ${err.message}`;
+      
+      // Look for the specific error from the raw text fallback
+      if (err.message.includes("Raw text returned")) {
+          errorMessage = `Backend Proxy returned an unexpected response! Please check server logs. ${err.message}`;
+      } else if (err.message.includes("Proxy Error: Status 500")) {
+          errorMessage = "Internal Server Error (500). Please check your backend logs for a crash.";
+      }
+      
+      setMessages(prev => [...prev, { 
+          type: "bot", 
+          text: errorMessage 
+      }]);
       console.error("Frontend fetch error (Final Failure):", err);
     } finally {
       setIsProcessing(false); 
