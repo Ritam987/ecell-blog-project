@@ -43,8 +43,10 @@ const Chatbot = () => {
   const chatEndRef = useRef(null);
   const location = useLocation();
 
+  // Scroll to bottom on new message
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
+  // Reset chatbot on route change
   useEffect(() => {
     setVisible(false);
     setMessages([
@@ -52,6 +54,7 @@ const Chatbot = () => {
     ]);
   }, [location.pathname]);
 
+  // Rule-based answer
   const getRuleBasedAnswer = useCallback((question) => {
     const categories = Object.values(ruleBasedQA).flat();
     const match = categories.find(
@@ -60,6 +63,7 @@ const Chatbot = () => {
     return match ? match.answer : null;
   }, []);
 
+  // Handle button click (rule-based)
   const handleQuestionClick = (qa) => {
     if (!isProcessing) {
       setMessages((prev) => [
@@ -70,10 +74,12 @@ const Chatbot = () => {
     }
   };
 
+  // Send message to backend AI
   const sendMessage = async (text) => {
     const query = text.trim();
     if (!query) return;
 
+    // Check rule-based first
     const ruleAnswer = getRuleBasedAnswer(query);
     if (ruleAnswer) {
       setMessages((prev) => [
@@ -85,6 +91,7 @@ const Chatbot = () => {
       return;
     }
 
+    // AI call
     setMessages((prev) => [...prev, { type: "user", text: query }]);
     setInputText("");
     setIsProcessing(true);
@@ -113,12 +120,14 @@ const Chatbot = () => {
     }
   };
 
+  // Handle enter key
   const handleInputSubmit = (e) => {
     if (e.key === "Enter" && inputText.trim() && !isProcessing) {
       sendMessage(inputText);
     }
   };
 
+  // Render message (with code formatting)
   const renderMessage = (msg) => {
     if (msg.text.startsWith("```")) {
       const languageMatch = msg.text.match(/```(\w+)/);
@@ -144,6 +153,7 @@ const Chatbot = () => {
         <FaRobot size={28} color={DARK_BG} />
       </motion.div>
 
+      {/* Chatbox */}
       <AnimatePresence>
         {visible && (
           <motion.div
@@ -227,6 +237,7 @@ const Chatbot = () => {
               ))}
             </div>
 
+            {/* Custom scrollbar */}
             <style>{`
               .custom-scrollbar::-webkit-scrollbar { width: 6px; }
               .custom-scrollbar::-webkit-scrollbar-track { background: ${DARK_BG}; border-radius: 4px; }
