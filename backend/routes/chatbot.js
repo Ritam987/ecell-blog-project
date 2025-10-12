@@ -28,7 +28,7 @@ router.post("/", async (req, res) => {
   try {
     // 3. Send message to OpenRouter
     const response = await axios.post(
-      "https://api.openrouter.ai/v1/chat/completions",
+      "https://openrouter.ai/api/v1/chat/completions",
       {
         model: "gpt-oss-20b",
         messages: [
