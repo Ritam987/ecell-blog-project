@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 // --- START OF HARDCODED CONFIGURATION ---
 // WARNING: This API key is publicly visible in the browser source code.
 const OPENROUTER_API_KEY = "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"; 
-const OPENROUTER_URL = "https://api.openrouter.ai/v1/chat/completions";
+const OPENROUTER_URL = "https://openrouter.ai/api/v1";
 const APP_REFERER = "https://ecell-blog.onrender.com/"; 
 const APP_TITLE = "Blog Assistant";
 // --- END OF HARDCODED CONFIGURATION ---
