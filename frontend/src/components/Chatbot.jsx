@@ -1,9 +1,14 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Configuration for the backend API URL
-// NOTE: This URL should point to your deployed Express backend.
-const API_URL = "https://ecell-blog-project.onrender.com/api/chatbot";
+// --- START OF CRITICAL SECURITY WARNING ---
+// WARNING: YOUR API KEY IS EXPOSED IN THIS FILE. USE A BACKEND PROXY FOR PRODUCTION.
+const OPENROUTER_API_KEY = "YOUR_SECRET_OPENROUTER_KEY_HERE"; // <<<--- REPLACE WITH YOUR ACTUAL KEY
+const OPENROUTER_URL = "https://api.openrouter.ai/v1/chat/completions";
+// Headers required by OpenRouter
+const APP_REFERER = "https://your-frontend-domain.com"; 
+const APP_TITLE = "Blog Assistant";
+// --- END OF CRITICAL SECURITY WARNING ---
 
 // Hardcoded QA for initial suggestions (Rule-Based functionality is preserved)
 const ruleBasedQA = {
@@ -44,7 +49,7 @@ const Chatbot = () => {
     return match ? match.answer : null;
   }
 
-  // Handler to send message to the backend API
+  // Handler to send message directly to the OpenRouter API
   const sendMessage = async (text) => {
     // 1. Check for rule-based answer first (for instant response on suggestion clicks)
     const ruleAnswer = getRuleBasedAnswer(text);
@@ -60,34 +65,55 @@ const Chatbot = () => {
     setInputText("");
     setIsProcessing(true); // Start loading
 
+    // Security Placeholder Check
+    if (OPENROUTER_API_KEY === "YOUR_SECRET_OPENROUTER_KEY_HERE") {
+        setIsProcessing(false);
+        setMessages(prev => [...prev, { type: "bot", text: "SECURITY ERROR: Please replace the placeholder API key in chatbot.jsx (or use a secure backend proxy)." }]);
+        return;
+    }
+    
     try {
-      // 3. Send request to the backend
-      const res = await fetch(API_URL, {
+      // 3. Prepare OpenRouter Payload
+      const apiPayload = {
+        "model": "gpt-3.5-turbo", // Using a common model
+        "messages": [
+            { "role": "system", "content": "You are a helpful assistant for a blogging website. Answer user queries concisely." },
+            { "role": "user", "content": text }
+        ],
+        "max_tokens": 500,
+        "temperature": 0.7
+      };
+      
+      // 4. Send request directly to OpenRouter
+      const res = await fetch(OPENROUTER_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text })
+        headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+            "HTTP-Referer": APP_REFERER,
+            "X-Title": APP_TITLE
+        },
+        body: JSON.stringify(apiPayload)
       });
       
       const data = await res.json();
-
-      // 4. Handle response from the backend
-      if (res.ok && data.reply) {
-        // Success: Status 2xx and 'reply' field present
-        setMessages(prev => [...prev, { type: "bot", text: data.reply }]);
+      
+      // 5. Handle response
+      if (res.ok && data.choices && data.choices.length > 0) {
+        // Success: Extract content
+        const reply = data.choices[0].message.content;
+        setMessages(prev => [...prev, { type: "bot", text: reply }]);
       } else if (data.error) {
-        // Error: Non-2xx status and 'error' field present (from the fixed backend)
-        const errorMessage = data.error.includes("API key is not configured")
-          ? "Configuration Error: The server's API Key is missing. Check backend setup."
-          : `Server Error: ${data.error}`;
-          
-        setMessages(prev => [...prev, { type: "bot", text: errorMessage }]);
+        // API Error from OpenRouter (e.g., invalid key, rate limit)
+        const errorMessage = data.error.message || `API Error (${res.status}): ${JSON.stringify(data)}`;
+        setMessages(prev => [...prev, { type: "bot", text: `AI Service Error: ${errorMessage}` }]);
       } else {
         // Unknown error structure
-        setMessages(prev => [...prev, { type: "bot", text: "Sorry, I received an unclear response from the server. Can you rephrase?" }]);
+        setMessages(prev => [...prev, { type: "bot", text: "Sorry, I received an unclear response from the AI service. Status: " + res.status }]);
       }
     } catch (err) {
-      // Network failure (connection refused, timeout, etc.)
-      setMessages(prev => [...prev, { type: "bot", text: "Error contacting the API server. Please check your network connection." }]);
+      // Network failure
+      setMessages(prev => [...prev, { type: "bot", text: "Error contacting the OpenRouter service. Please check your network." }]);
       console.error("Frontend fetch error:", err);
     } finally {
       setIsProcessing(false); // Stop loading regardless of outcome
@@ -264,5 +290,3 @@ const Chatbot = () => {
     </div>
   );
 };
-
-export default Chatbot;
