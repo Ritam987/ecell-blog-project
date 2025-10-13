@@ -2,8 +2,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "react-router-dom";
-// ADDED FaRedoAlt import
-import { FaRobot, FaCopy, FaExpand, FaCompress, FaRedoAlt } from "react-icons/fa"; 
+import { FaRobot, FaCopy, FaExpand, FaCompress, FaRedoAlt } from "react-icons/fa";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { dark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import ReactMarkdown from "react-markdown";
@@ -44,9 +43,8 @@ const Chatbot = () => {
   const [inputText, setInputText] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [size, setSize] = useState({ width: 360, height: 520 });
-  // ADDED: state to store the last user message for the retry feature
   const [lastUserMessage, setLastUserMessage] = useState(null); 
-  // UPDATED: resizingRef now holds the direction string ('se', 'n', 'w', etc.) or null
+  // UPDATED: resizingRef now holds an object with direction, start size, and start position
   const resizingRef = useRef(null); 
 
   const chatEndRef = useRef(null);
@@ -64,7 +62,6 @@ const Chatbot = () => {
     setMessages([
       { type: "bot", text: "👋 Hello! I’m Scooby Doo, your assistant. Click a suggested question or ask below." },
     ]);
-    // ADDED: Reset last user message
     setLastUserMessage(null);
   }, [location.pathname]);
 
@@ -91,7 +88,6 @@ const Chatbot = () => {
       { type: "user", text: qa.question },
       { type: "bot", text: qa.answer },
     ]);
-    // ADDED: Track the clicked question for retry
     setLastUserMessage(qa.question);
   };
 
@@ -104,7 +100,6 @@ const Chatbot = () => {
       const snippet = fullText.slice(0, nextIndex);
       setMessages((prev) => {
         const copy = [...prev];
-        // Ensure the last message is a bot message before trying to update it
         if (copy.length > 0 && copy[copy.length - 1].type === "bot") {
             copy[copy.length - 1] = { ...copy[copy.length - 1], text: snippet };
         }
@@ -139,23 +134,21 @@ const Chatbot = () => {
     }
   };
 
-  // Send message - MODIFIED to handle retry logic
+  // Send message
   const sendMessage = async (text, isRetry = false) => {
     const query = (text || "").trim();
     if (!query) return;
 
-    // Only add new user message if not a retry
     if (!isRetry) {
         setMessages((prev) => [...prev, { type: "user", text: query }]);
-        setLastUserMessage(query); // Save for potential retry
+        setLastUserMessage(query); 
         setInputText("");
     }
     
-    // Add bot placeholder or clear existing one if retrying
     setMessages((prev) => {
         if (isRetry && prev.length > 0 && prev[prev.length - 1].type === "bot") {
             const copy = [...prev];
-            copy[copy.length - 1] = { ...copy[copy.length - 1], text: "" }; // Clear previous error text
+            copy[copy.length - 1] = { ...copy[copy.length - 1], text: "" };
             return copy;
         }
         return [...prev, { type: "bot", text: "" }];
@@ -163,7 +156,6 @@ const Chatbot = () => {
 
     setIsProcessing(true);
 
-    // Rule-based quick answer (only on initial send)
     if (!isRetry) {
         const ruleAnswer = getRuleBasedAnswer(query);
         if (ruleAnswer) {
@@ -183,7 +175,6 @@ const Chatbot = () => {
           "🤖 Sorry, I couldn't understand that.";
         await typeText(reply);
       } else {
-        // Last generation / fallback if API offline or limit reached
         await typeText(
           "⚠️ Scooby is offline: API limit reached or server unavailable. You can try again later or continue with rule-based answers. Use the **Retry** button below."
         );
@@ -198,10 +189,8 @@ const Chatbot = () => {
     }
   };
 
-  // ADDED: Retry handler
   const handleRetry = () => {
     if (isProcessing || !lastUserMessage) return;
-    // Remove the last bot message (error message) before retrying
     setMessages((prev) => prev.slice(0, -1));
     sendMessage(lastUserMessage, true);
   };
@@ -210,52 +199,44 @@ const Chatbot = () => {
     if (e.key === "Enter" && inputText.trim() && !isProcessing) sendMessage(inputText);
   };
 
-  // Manual resize - MODIFIED to handle any side
+  // Manual resize - FIXED to use start position and size for accurate delta
   useEffect(() => {
     const onMove = (ev) => {
       if (!resizingRef.current) return;
-      const direction = resizingRef.current;
-      const box = chatBoxRef.current?.getBoundingClientRect();
-      if (!box) return;
-
-      const minW = 280;
+      const { direction, startSize, startPos, startRect } = resizingRef.current;
+      
+      const minW = 280;
       const minH = 380;
       const maxW = 900;
       const maxH = 900;
 
-      let newW = size.width;
-      let newH = size.height;
+      let newW = startSize.width;
+      let newH = startSize.height;
       
-      const originalRight = window.innerWidth - box.right;
-      const originalBottom = window.innerHeight - box.bottom;
+      const deltaX = ev.clientX - startPos.x;
+      const deltaY = ev.clientY - startPos.y;
 
-      // Handle Width changes (Right and Left)
+      // Handle Width changes
       if (direction.includes("r")) {
-          newW = Math.min(maxW, Math.max(minW, ev.clientX - box.left));
+          newW = Math.min(maxW, Math.max(minW, startSize.width + deltaX));
       } else if (direction.includes("l")) {
-          const deltaX = box.left - ev.clientX;
-          const potentialNewW = box.width + deltaX;
-          if (potentialNewW >= minW && potentialNewW <= maxW) {
-              newW = potentialNewW;
-              // Adjust right position to make it seem like we're pulling from the left
-              chatBoxRef.current.style.right = `${originalRight + (newW - box.width)}px`;
-          } else if (potentialNewW < minW) {
-              newW = minW;
+          newW = Math.min(maxW, Math.max(minW, startSize.width - deltaX));
+          // Adjust position for left drag
+          if (chatBoxRef.current) {
+              const adjustedDeltaX = startSize.width - newW;
+              chatBoxRef.current.style.right = `${window.innerWidth - startRect.right + adjustedDeltaX}px`;
           }
       }
 
-      // Handle Height changes (Bottom and Top)
+      // Handle Height changes
       if (direction.includes("b")) {
-          newH = Math.min(maxH, Math.max(minH, ev.clientY - box.top));
+          newH = Math.min(maxH, Math.max(minH, startSize.height + deltaY));
       } else if (direction.includes("t")) {
-          const deltaY = box.top - ev.clientY;
-          const potentialNewH = box.height + deltaY;
-          if (potentialNewH >= minH && potentialNewH <= maxH) {
-              newH = potentialNewH;
-              // Adjust bottom position to make it seem like we're pulling from the top
-              chatBoxRef.current.style.bottom = `${originalBottom + (newH - box.height)}px`;
-          } else if (potentialNewH < minH) {
-              newH = minH;
+          newH = Math.min(maxH, Math.max(minH, startSize.height - deltaY));
+          // Adjust position for top drag
+          if (chatBoxRef.current) {
+              const adjustedDeltaY = startSize.height - newH;
+              chatBoxRef.current.style.bottom = `${window.innerHeight - startRect.bottom + adjustedDeltaY}px`;
           }
       }
       
@@ -279,24 +260,33 @@ const Chatbot = () => {
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onUp);
     };
-  }, [size]); // Added size dependency for accurate calculations inside onMove
+  }, [size]); // Keep size dependency for the cleanup/re-effect logic
 
-  // MODIFIED: startResize now accepts a direction string
+  // MODIFIED: startResize now stores initial state
   const startResize = (ev, direction) => {
     ev.preventDefault();
     ev.stopPropagation();
-    resizingRef.current = direction;
+
+    const box = chatBoxRef.current?.getBoundingClientRect();
+    if (!box) return;
+
+    resizingRef.current = {
+        direction,
+        startSize: { width: size.width, height: size.height },
+        startPos: { x: ev.clientX, y: ev.clientY },
+        startRect: box, // Store initial rect for position calculation
+    };
+
     document.body.style.cursor = `${direction}-resize`; // Set appropriate cursor
   };
 
-  // Render message bubble - MODIFIED to include Retry Button on error
+  // Render message bubble
   const renderMessage = (msg, index) => {
     const bubbleClasses =
       msg.type === "user"
         ? "ml-auto bg-pink-600 text-white rounded-xl rounded-br-none p-2 sm:p-3 max-w-[90%] break-words text-sm sm:text-base"
         : "mr-auto bg-neutral-800 text-white rounded-xl rounded-tl-none p-2 sm:p-3 max-w-[90%] break-words text-sm sm:text-base relative";
 
-    // CHECK for error message for retry feature
     const isLastBotMessage = index === messages.length - 1 && msg.type === "bot";
     const isError = isLastBotMessage && (msg.text.includes("offline") || msg.text.includes("Network Error") || msg.text.includes("API limit reached"));
 
@@ -339,7 +329,7 @@ const Chatbot = () => {
               >
                 {msg.text}
               </ReactMarkdown>
-              {/* ADDED: Retry Button */}
+              {/* Retry Button */}
               {isError && lastUserMessage && (
                 <div className="mt-3 text-right">
                   <motion.button
@@ -419,7 +409,7 @@ const Chatbot = () => {
             <div className="flex-1 p-3 overflow-y-auto custom-scrollbar space-y-3" style={{ minHeight: 0 }}>
               {messages.map((msg, i) => (
                 <motion.div key={i} initial={{ opacity: 0, x: msg.type === "user" ? 30 : -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.18 }}>
-                  {renderMessage(msg, i)} {/* Passed index for error check */}
+                  {renderMessage(msg, i)}
                 </motion.div>
               ))}
               {isProcessing && <div className="text-xs text-gray-300 italic px-2">Scooby is typing...</div>}
@@ -467,8 +457,8 @@ const Chatbot = () => {
               ))}
             </div>
 
-            {/* Resize handles - MODIFIED for all sides */}
-            {/* Corner Resize: Bottom-Right (SE) - Kept the original style, but changed logic */}
+            {/* Resize handles - All sides */}
+            {/* Corner Resize: Bottom-Right (SE) - The original handle */}
             <div
               onMouseDown={(ev) => startResize(ev, "se")}
               role="button"
@@ -488,7 +478,6 @@ const Chatbot = () => {
               }}
             />
 
-            {/* Side Resizes (R, B, L, T) and other corners (TR, BL, TL) */}
             {/* Top-Right (NE) */}
             <div
               onMouseDown={(ev) => startResize(ev, "ne")}
