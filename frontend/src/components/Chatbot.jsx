@@ -9,7 +9,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 // --- CONFIGURATION ---
-const CHAT_PROXY_URL = "https://ecell-blog-project.onrender.com/api/chatbot"; 
+const CHAT_PROXY_URL = "https://ecell-blog-project.onrender.com/api/chatbot";
 const NEON_BLUE = "#39ff14";
 const NEON_PINK = "#ff00ff";
 const DARK_BG = "#0a0a0a";
@@ -42,15 +42,15 @@ const Chatbot = () => {
   const [compact, setCompact] = useState(false);
   const [inputText, setInputText] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
-
   const chatEndRef = useRef(null);
   const location = useLocation();
 
-  // --- Scroll to bottom on new message ---
-  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+  // Scroll always to the latest message
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
-  // --- Reset on route change ---
+  // Reset messages when route changes
   useEffect(() => {
     setVisible(false);
     setMessages([
@@ -58,7 +58,7 @@ const Chatbot = () => {
     ]);
   }, [location.pathname]);
 
-  // --- Rule-based matching ---
+  // Match local Q&A
   const getRuleBasedAnswer = useCallback((question) => {
     const categories = Object.values(ruleBasedQA).flat();
     const match = categories.find(
@@ -67,6 +67,7 @@ const Chatbot = () => {
     return match ? match.answer : null;
   }, []);
 
+  // Show preloaded questions
   const handleQuestionClick = (qa) => {
     if (!isProcessing) {
       setMessages((prev) => [
@@ -77,7 +78,7 @@ const Chatbot = () => {
     }
   };
 
-  // --- Typing Animation ---
+  // Typing animation
   const typeText = (fullText) => {
     return new Promise((resolve) => {
       let index = 0;
@@ -88,15 +89,15 @@ const Chatbot = () => {
           return newMessages;
         });
         index++;
-        if (index === fullText.length) {
+        if (index >= fullText.length) {
           clearInterval(interval);
           resolve();
         }
-      }, 15); // 15ms per character
+      }, 12);
     });
   };
 
-  // --- Send Message (with streaming effect) ---
+  // Send message (AI + fallback)
   const sendMessage = async (text) => {
     const query = text.trim();
     if (!query) return;
@@ -127,15 +128,14 @@ const Chatbot = () => {
       let botReply = "";
       if (res.ok) {
         const data = await res.json();
-        botReply = data.reply || JSON.stringify(data);
+        botReply = data.reply || data.response || JSON.stringify(data, null, 2);
       } else {
-        botReply = `⚠️ Server Error (Status ${res.status})`;
+        botReply = `⚠️ Server Error (${res.status})`;
       }
 
       await typeText(botReply);
     } catch (err) {
-      console.error(err);
-      await typeText("❌ Network Error: Unable to connect.");
+      await typeText("❌ Network Error: Unable to connect to the AI service.");
     } finally {
       setIsProcessing(false);
     }
@@ -146,13 +146,15 @@ const Chatbot = () => {
   };
 
   const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text).then(() => alert("AI response copied!"));
+    navigator.clipboard.writeText(text);
   };
 
+  // --- MESSAGE BUBBLES ---
   const renderMessage = (msg) => {
-    const bubbleClasses = msg.type === "user"
-      ? "ml-auto bg-neonPink text-white rounded-xl rounded-br-none p-2 sm:p-3 max-w-[90%] sm:max-w-[80%] break-words text-sm sm:text-base leading-relaxed"
-      : "mr-auto bg-neonGreen text-black rounded-xl rounded-tl-none p-2 sm:p-3 max-w-[90%] sm:max-w-[80%] break-words text-sm sm:text-base leading-relaxed relative";
+    const bubbleClasses =
+      msg.type === "user"
+        ? "ml-auto bg-pink-500 text-white rounded-xl rounded-br-none p-2 sm:p-3 max-w-[90%] sm:max-w-[80%] break-words text-sm sm:text-base"
+        : "mr-auto bg-green-400 text-black rounded-xl rounded-tl-none p-2 sm:p-3 max-w-[90%] sm:max-w-[80%] break-words text-sm sm:text-base relative";
 
     return (
       <div className={bubbleClasses}>
@@ -165,67 +167,49 @@ const Chatbot = () => {
             >
               <FaCopy />
             </button>
-            <div className="overflow-auto max-h-[60vh] sm:max-h-72 md:max-h-96">
+            <div className="overflow-y-auto max-h-[65vh] md:max-h-[60vh] pr-1">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
+                className="prose prose-invert max-w-none text-sm sm:text-base"
                 components={{
-                  h1: ({node, ...props}) => <h1 className="text-xl sm:text-2xl font-bold mb-1" {...props} />,
-                  h2: ({node, ...props}) => <h2 className="text-lg sm:text-xl font-bold mb-1" {...props} />,
-                  h3: ({node, ...props}) => <h3 className="text-md sm:text-lg font-semibold mb-1" {...props} />,
-                  p: ({node, ...props}) => <p className="mb-1" {...props} />,
-                  strong: ({node, ...props}) => <strong className="font-bold" {...props} />,
-                  em: ({node, ...props}) => <em className="italic" {...props} />,
-                  u: ({node, ...props}) => <u className="underline" {...props} />,
-                  a: ({node, ...props}) => <a className="text-blue-400 underline" {...props} />,
-                  img: ({node, ...props}) => <img className="my-2 rounded max-w-full" {...props} />,
-                  ul: ({node, ...props}) => <ul className="list-disc ml-5 mb-1" {...props} />,
-                  ol: ({node, ...props}) => <ol className="list-decimal ml-5 mb-1" {...props} />,
-                  table: ({node, ...props}) => <table className="border border-gray-500 mb-2 w-full text-sm sm:text-base" {...props} />,
-                  th: ({node, ...props}) => <th className="border border-gray-500 px-2 py-1 bg-gray-700 text-white" {...props} />,
-                  td: ({node, ...props}) => <td className="border border-gray-500 px-2 py-1" {...props} />,
-                  code({node, inline, className, children, ...props}) {
-                    const match = /language-(\w+)/.exec(className || '');
+                  code({ node, inline, className, children, ...props }) {
+                    const match = /language-(\w+)/.exec(className || "");
                     return !inline && match ? (
-                      <div className="overflow-auto max-h-60 sm:max-h-72 md:max-h-96 my-2 rounded border border-gray-600">
+                      <div className="overflow-auto max-h-[55vh] my-2 rounded border border-gray-600">
                         <SyntaxHighlighter style={dark} language={match[1]} {...props}>
-                          {String(children).replace(/\n$/, '')}
+                          {String(children).replace(/\n$/, "")}
                         </SyntaxHighlighter>
                       </div>
                     ) : (
-                      <code className="bg-gray-700 text-white px-1 rounded text-xs sm:text-sm" {...props}>{children}</code>
+                      <code className="bg-gray-800 text-white px-1 rounded text-xs sm:text-sm" {...props}>
+                        {children}
+                      </code>
                     );
                   },
-                  blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-gray-400 pl-3 italic my-2" {...props} />
                 }}
               >
                 {msg.text}
               </ReactMarkdown>
             </div>
           </>
-        ) : msg.text}
+        ) : (
+          msg.text
+        )}
       </div>
     );
   };
 
   return (
-    <motion.div
-      drag
-      dragMomentum={false}
-      dragConstraints={{ top: 0, left: 0, right: window.innerWidth - 50, bottom: window.innerHeight - 50 }}
-      dragElastic={0.2}
-      style={{ x: dragPosition.x, y: dragPosition.y }}
-      className="fixed bottom-4 right-2 z-50"
-    >
-      {/* Floating Robot */}
+    <motion.div drag dragMomentum={false} className="fixed bottom-4 right-3 z-50">
+      {/* Floating Icon */}
       {!visible && (
         <motion.div
           className="p-3 rounded-full cursor-pointer flex items-center justify-center"
-          style={{ backgroundColor: NEON_BLUE, boxShadow: `0 0 20px ${NEON_BLUE}` }}
+          style={{ backgroundColor: NEON_BLUE, boxShadow: `0 0 25px ${NEON_BLUE}` }}
           onClick={() => setVisible(true)}
           animate={{ y: [0, -10, 0] }}
-          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          whileHover={{ scale: 1.2, boxShadow: `0 0 30px ${NEON_BLUE}` }}
-          whileTap={{ scale: 0.95 }}
+          transition={{ duration: 2, repeat: Infinity }}
+          whileHover={{ scale: 1.15 }}
         >
           <FaRobot size={28} color={DARK_BG} />
         </motion.div>
@@ -235,38 +219,48 @@ const Chatbot = () => {
         {visible && !compact && (
           <motion.div
             className="w-full sm:w-80 max-w-full rounded-lg flex flex-col overflow-hidden"
-            style={{ backgroundColor: DARK_BG, border: `2px solid ${NEON_BLUE}`, boxShadow: `0 0 20px ${NEON_BLUE}`, minHeight: "450px" }}
-            initial={{ opacity: 0, y: 20 }}
+            style={{
+              backgroundColor: DARK_BG,
+              border: `2px solid ${NEON_BLUE}`,
+              boxShadow: `0 0 20px ${NEON_BLUE}`,
+              minHeight: "470px",
+            }}
+            initial={{ opacity: 0, y: 25 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.3 }}
+            exit={{ opacity: 0, y: 25 }}
           >
             {/* Header */}
-            <div className="px-4 py-3 font-bold text-lg flex justify-between items-center" style={{ backgroundColor: NEON_BLUE, color: DARK_BG }}>
+            <div
+              className="px-4 py-3 font-bold text-lg flex justify-between items-center"
+              style={{ backgroundColor: NEON_BLUE, color: DARK_BG }}
+            >
               Scooby Doo Assistant
               <div className="flex items-center gap-2">
-                <button onClick={() => setCompact(!compact)} className="hover:text-gray-700 transition-colors">
+                <button
+                  onClick={() => setCompact(!compact)}
+                  className="hover:text-gray-700 transition"
+                >
                   {compact ? <FaExpand /> : <FaCompress />}
                 </button>
-                <button onClick={() => setVisible(false)} className="text-xl font-bold hover:text-gray-700 transition-colors">&times;</button>
+                <button onClick={() => setVisible(false)} className="font-bold text-xl">
+                  &times;
+                </button>
               </div>
             </div>
 
             {/* Messages */}
-            <div className="flex-1 p-3 overflow-y-auto custom-scrollbar space-y-3" style={{ maxHeight: "300px" }}>
-              {messages.map((msg, idx) => (
+            <div className="flex-1 p-3 overflow-y-auto custom-scrollbar space-y-3">
+              {messages.map((msg, i) => (
                 <motion.div
-                  key={idx}
+                  key={i}
                   initial={{ opacity: 0, x: msg.type === "user" ? 50 : -50 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, type: "spring", stiffness: 100 }}
+                  transition={{ duration: 0.25 }}
                 >
                   {renderMessage(msg)}
                 </motion.div>
               ))}
-              {isProcessing && (
-                <div className="flex items-center p-2 text-xs text-gray-400 italic">Assistant is typing...</div>
-              )}
+              {isProcessing && <p className="italic text-gray-400 text-xs px-2">Scooby is typing...</p>}
               <div ref={chatEndRef} />
             </div>
 
@@ -277,24 +271,31 @@ const Chatbot = () => {
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyDown={handleInputSubmit}
-                placeholder={isProcessing ? "Waiting for response..." : "Ask a question..."}
+                placeholder={isProcessing ? "Please wait..." : "Ask Scooby..."}
                 disabled={isProcessing}
                 className="flex-1 px-3 py-2 rounded-full text-white outline-none"
-                style={{ backgroundColor: "rgba(50,50,50,0.5)", border: `1px solid ${NEON_BLUE}`, boxShadow: `0 0 5px ${NEON_BLUE}` }}
+                style={{
+                  backgroundColor: "rgba(50,50,50,0.6)",
+                  border: `1px solid ${NEON_BLUE}`,
+                }}
               />
               <motion.button
                 onClick={() => sendMessage(inputText)}
                 disabled={!inputText.trim() || isProcessing}
-                whileHover={{ scale: !inputText.trim() || isProcessing ? 1 : 1.05 }}
-                whileTap={{ scale: !inputText.trim() || isProcessing ? 1 : 0.95 }}
-                className={`px-3 py-2 rounded-full font-semibold text-xs flex items-center ${!inputText.trim() || isProcessing ? "opacity-50 cursor-not-allowed" : "bg-neonBlue text-black"}`}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className={`px-4 py-2 rounded-full font-semibold ${
+                  !inputText.trim() || isProcessing
+                    ? "opacity-50 cursor-not-allowed"
+                    : "bg-neonBlue text-black"
+                }`}
                 style={{ boxShadow: `0 0 10px ${NEON_BLUE}` }}
               >
                 Send
               </motion.button>
             </div>
 
-            {/* Rule-based Buttons */}
+            {/* Quick Buttons */}
             <div className="p-3 border-t border-neonBlue flex flex-col gap-3">
               {Object.entries(ruleBasedQA).map(([category, qas], idx) => (
                 <div key={idx}>
@@ -305,7 +306,7 @@ const Chatbot = () => {
                         key={i}
                         onClick={() => handleQuestionClick(qa)}
                         whileHover={{ scale: 1.05, boxShadow: `0 0 10px ${NEON_PINK}` }}
-                        className="bg-gray-800 text-white px-3 py-1 rounded shadow-lg"
+                        className="bg-gray-800 text-white px-3 py-1 rounded shadow-md"
                         style={{ border: `1px solid ${NEON_PINK}` }}
                       >
                         {qa.question}
@@ -318,9 +319,9 @@ const Chatbot = () => {
 
             <style>{`
               .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-              .custom-scrollbar::-webkit-scrollbar-track { background: ${DARK_BG}; border-radius: 4px; }
-              .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(57, 255, 20, 0.5); border-radius: 4px; }
-              .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: ${NEON_BLUE}; }
+              .custom-scrollbar::-webkit-scrollbar-track { background: ${DARK_BG}; }
+              .custom-scrollbar::-webkit-scrollbar-thumb { background: ${NEON_BLUE}; border-radius: 4px; }
+              .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: ${NEON_GREEN}; }
             `}</style>
           </motion.div>
         )}
