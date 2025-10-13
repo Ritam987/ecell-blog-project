@@ -43,19 +43,27 @@ const Chatbot = () => {
   const [inputText, setInputText] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // size state for manual resize (persistent)
+  // persistent size
   const defaultSize = { width: 360, height: 520 };
   const [size, setSize] = useState(() => {
     const saved = localStorage.getItem("chatbotSize");
     return saved ? JSON.parse(saved) : defaultSize;
   });
-  const resizingRef = useRef(false);
 
-  const chatEndRef = useRef(null);
+  // persistent position
+  const defaultPos = { x: 0, y: 0 };
+  const [position, setPosition] = useState(() => {
+    const saved = localStorage.getItem("chatbotPos");
+    return saved ? JSON.parse(saved) : defaultPos;
+  });
+
+  const resizingRef = useRef(false);
+  const resizeDirRef = useRef(null);
   const chatBoxRef = useRef(null);
+  const chatEndRef = useRef(null);
   const location = useLocation();
 
-  // scroll to bottom when messages change
+  // scroll to bottom
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isProcessing, size]);
@@ -68,26 +76,22 @@ const Chatbot = () => {
     ]);
   }, [location.pathname]);
 
-  // rule-based answer helper
   const getRuleBasedAnswer = useCallback((question) => {
     const categories = Object.values(ruleBasedQA).flat();
     const match = categories.find((qa) => qa.question.toLowerCase().trim() === question.toLowerCase().trim());
     return match ? match.answer : null;
   }, []);
 
-  // copy helper
   const copyToClipboard = (text) => {
     if (!navigator?.clipboard) return;
     navigator.clipboard.writeText(text);
   };
 
-  // handle suggested question click
   const handleQuestionClick = (qa) => {
     if (isProcessing) return;
     setMessages((prev) => [...prev, { type: "user", text: qa.question }, { type: "bot", text: qa.answer }]);
   };
 
-  // typing animation
   const typeText = async (fullText) => {
     const CHUNK = 40;
     let index = 0;
@@ -104,7 +108,6 @@ const Chatbot = () => {
     }
   };
 
-  // robust fetch
   const fetchReply = async (payload) => {
     const res = await fetch(CHAT_PROXY_URL, {
       method: "POST",
@@ -121,7 +124,6 @@ const Chatbot = () => {
     }
   };
 
-  // sendMessage main function
   const sendMessage = async (text) => {
     const query = (text || "").trim();
     if (!query) return;
@@ -161,37 +163,67 @@ const Chatbot = () => {
     if (e.key === "Enter" && inputText.trim() && !isProcessing) sendMessage(inputText);
   };
 
-  // manual resize with persistent storage
+  // --- RESIZE LOGIC ---
   useEffect(() => {
     const onMove = (ev) => {
-      if (!resizingRef.current) return;
-      const box = chatBoxRef.current?.getBoundingClientRect();
-      if (!box) return;
-      const newW = Math.max(280, ev.clientX - box.left);
-      const newH = Math.max(380, ev.clientY - box.top);
-      const newSize = { width: Math.min(newW, 900), height: Math.min(newH, 900) };
+      if (!resizingRef.current || !chatBoxRef.current) return;
+      const box = chatBoxRef.current.getBoundingClientRect();
+      const dir = resizeDirRef.current;
+      const minW = 280, minH = 380, maxW = 900, maxH = 900;
+      let newSize = { ...size };
+      let newPos = { ...position };
+
+      if (dir.includes("right")) newSize.width = Math.min(maxW, Math.max(minW, ev.clientX - box.left));
+      if (dir.includes("bottom")) newSize.height = Math.min(maxH, Math.max(minH, ev.clientY - box.top));
+      if (dir.includes("left")) {
+        const diff = ev.clientX - box.left;
+        newSize.width = Math.min(maxW, Math.max(minW, box.width - diff));
+        newPos.x = position.x + diff;
+      }
+      if (dir.includes("top")) {
+        const diff = ev.clientY - box.top;
+        newSize.height = Math.min(maxH, Math.max(minH, box.height - diff));
+        newPos.y = position.y + diff;
+      }
+
       setSize(newSize);
+      setPosition(newPos);
       localStorage.setItem("chatbotSize", JSON.stringify(newSize));
+      localStorage.setItem("chatbotPos", JSON.stringify(newPos));
     };
+
     const onUp = () => {
       resizingRef.current = false;
+      resizeDirRef.current = null;
       document.body.style.cursor = "default";
     };
+
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
     return () => {
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onUp);
     };
-  }, []);
+  }, [size, position]);
 
-  const startResize = (ev) => {
+  const startResize = (ev, dir) => {
     ev.preventDefault();
     resizingRef.current = true;
-    document.body.style.cursor = "nwse-resize";
+    resizeDirRef.current = dir;
+    const cursorMap = {
+      top: "ns-resize",
+      bottom: "ns-resize",
+      left: "ew-resize",
+      right: "ew-resize",
+      "top-left": "nwse-resize",
+      "top-right": "nesw-resize",
+      "bottom-left": "nesw-resize",
+      "bottom-right": "nwse-resize",
+    };
+    document.body.style.cursor = cursorMap[dir] || "default";
   };
 
-  // render chat bubbles with markdown + code
+  // --- RENDER MESSAGE ---
   const renderMessage = (msg) => {
     const bubbleClasses =
       msg.type === "user"
@@ -202,11 +234,7 @@ const Chatbot = () => {
       <div className={bubbleClasses}>
         {msg.type === "bot" ? (
           <>
-            <button
-              className="absolute top-1 right-1 text-xs text-gray-300 hover:text-white"
-              onClick={() => copyToClipboard(msg.text)}
-              title="Copy response"
-            >
+            <button className="absolute top-1 right-1 text-xs text-gray-300 hover:text-white" onClick={() => copyToClipboard(msg.text)} title="Copy response">
               <FaCopy />
             </button>
             <div className="overflow-auto max-h-[60vh] pr-1">
@@ -231,6 +259,8 @@ const Chatbot = () => {
                       </code>
                     );
                   },
+                  a: ({ node, ...props }) => <a {...props} className="text-blue-300 underline" />,
+                  img: ({ node, ...props }) => <img {...props} className="max-w-full rounded my-2" />,
                 }}
               >
                 {msg.text}
@@ -244,9 +274,15 @@ const Chatbot = () => {
     );
   };
 
-  // --- RENDER ---
+  // --- RENDER CHATBOT ---
   return (
-    <motion.div drag dragMomentum={false} className="fixed bottom-4 right-3 z-50" style={{ touchAction: "none" }}>
+    <motion.div
+      drag
+      dragMomentum={false}
+      className="fixed z-50"
+      style={{ touchAction: "none", bottom: position.y, right: position.x }}
+      onDragEnd={(e, info) => setPosition({ x: info.point.x, y: info.point.y })}
+    >
       {!visible && (
         <motion.div
           className="p-3 rounded-full cursor-pointer flex items-center justify-center"
@@ -352,25 +388,35 @@ const Chatbot = () => {
               ))}
             </div>
 
-            {/* Resize handle */}
-            <div
-              onMouseDown={startResize}
-              role="button"
-              aria-label="Resize chat"
-              title="Drag to resize"
-              style={{
-                position: "absolute",
-                right: 4,
-                bottom: 4,
-                width: 18,
-                height: 18,
-                cursor: "nwse-resize",
-                zIndex: 30,
-                background: `linear-gradient(135deg, transparent 50%, ${NEON_BLUE} 50%)`,
-                transform: "translate(2px, 2px)",
-                borderRadius: 2,
-              }}
-            />
+            {/* Resize Handles */}
+            {["top-left","top","top-right","right","bottom-right","bottom","bottom-left","left"].map((dir) => (
+              <div
+                key={dir}
+                onMouseDown={(e) => startResize(e, dir)}
+                role="button"
+                aria-label="Resize chat"
+                title="Drag to resize"
+                style={{
+                  position: "absolute",
+                  width: ["top","bottom"].includes(dir) ? "100%" : 12,
+                  height: ["left","right"].includes(dir) ? "100%" : 12,
+                  ...(dir.includes("top") ? { top: -6 } : dir.includes("bottom") ? { bottom: -6 } : {}),
+                  ...(dir.includes("left") ? { left: -6 } : dir.includes("right") ? { right: -6 } : {}),
+                  cursor: {
+                    "top-left":"nwse-resize",
+                    "top-right":"nesw-resize",
+                    "bottom-left":"nesw-resize",
+                    "bottom-right":"nwse-resize",
+                    top:"ns-resize",
+                    bottom:"ns-resize",
+                    left:"ew-resize",
+                    right:"ew-resize"
+                  }[dir],
+                  zIndex: 30,
+                  background: "transparent",
+                }}
+              />
+            ))}
 
             <style>{`
               .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
