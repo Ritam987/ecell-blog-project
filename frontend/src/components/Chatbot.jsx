@@ -133,6 +133,7 @@ const Chatbot = () => {
     const query = (text || "").trim();
     if (!query) return;
 
+    // Push user + bot placeholder for typing
     setMessages((prev) => [...prev, { type: "user", text: query }, { type: "bot", text: "" }]);
     setInputText("");
     setIsProcessing(true);
@@ -155,11 +156,16 @@ const Chatbot = () => {
           "🤖 Sorry, I couldn't understand that.";
         await typeText(reply);
       } else {
-        await typeText("⚠️ Scooby is offline: API limit reached or server unavailable.");
+        // Last generation / fallback if API offline or limit reached
+        await typeText(
+          "⚠️ Scooby is offline: API limit reached or server unavailable. You can try again later or continue with rule-based answers."
+        );
       }
     } catch (err) {
       console.error(err);
-      await typeText("❌ Network Error: Scooby is offline, try again later.");
+      await typeText(
+        "❌ Network Error: Scooby is offline, please check your connection or try again later."
+      );
     } finally {
       setIsProcessing(false);
     }
