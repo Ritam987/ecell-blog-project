@@ -42,33 +42,19 @@ const Chatbot = () => {
   const [compact, setCompact] = useState(false);
   const [inputText, setInputText] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
-
-  // persistent size
-  const defaultSize = { width: 360, height: 520 };
-  const [size, setSize] = useState(() => {
-    const saved = localStorage.getItem("chatbotSize");
-    return saved ? JSON.parse(saved) : defaultSize;
-  });
-
-  // persistent position
-  const defaultPos = { x: 0, y: 0 };
-  const [position, setPosition] = useState(() => {
-    const saved = localStorage.getItem("chatbotPos");
-    return saved ? JSON.parse(saved) : defaultPos;
-  });
-
+  const [size, setSize] = useState({ width: 360, height: 520 });
   const resizingRef = useRef(false);
-  const resizeDirRef = useRef(null);
-  const chatBoxRef = useRef(null);
+
   const chatEndRef = useRef(null);
+  const chatBoxRef = useRef(null);
   const location = useLocation();
 
-  // scroll to bottom
+  // Scroll to latest message
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isProcessing, size]);
 
-  // reset messages on route change
+  // Reset on route change
   useEffect(() => {
     setVisible(false);
     setMessages([
@@ -76,22 +62,32 @@ const Chatbot = () => {
     ]);
   }, [location.pathname]);
 
+  // Rule-based answer
   const getRuleBasedAnswer = useCallback((question) => {
     const categories = Object.values(ruleBasedQA).flat();
-    const match = categories.find((qa) => qa.question.toLowerCase().trim() === question.toLowerCase().trim());
+    const match = categories.find(
+      (qa) => qa.question.toLowerCase().trim() === question.toLowerCase().trim()
+    );
     return match ? match.answer : null;
   }, []);
 
+  // Copy text
   const copyToClipboard = (text) => {
     if (!navigator?.clipboard) return;
-    navigator.clipboard.writeText(text);
+    navigator.clipboard.writeText(text).then(() => console.log("Copied AI response"));
   };
 
+  // Handle suggested question click
   const handleQuestionClick = (qa) => {
     if (isProcessing) return;
-    setMessages((prev) => [...prev, { type: "user", text: qa.question }, { type: "bot", text: qa.answer }]);
+    setMessages((prev) => [
+      ...prev,
+      { type: "user", text: qa.question },
+      { type: "bot", text: qa.answer },
+    ]);
   };
 
+  // Typing animation
   const typeText = async (fullText) => {
     const CHUNK = 40;
     let index = 0;
@@ -104,36 +100,47 @@ const Chatbot = () => {
         return copy;
       });
       index = nextIndex;
-      await new Promise((r) => setTimeout(r, Math.max(6, Math.floor(180 / Math.sqrt(fullText.length + 1)))));
+      await new Promise((r) =>
+        setTimeout(r, Math.max(6, Math.floor(180 / Math.sqrt(fullText.length + 1))))
+      );
     }
   };
 
+  // Fetch AI reply safely
   const fetchReply = async (payload) => {
-    const res = await fetch(CHAT_PROXY_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const contentType = res.headers.get("content-type") || "";
-    if (contentType.includes("application/json")) {
-      const data = await res.json();
-      return { ok: res.ok, body: data };
-    } else {
-      const text = await res.text();
-      return { ok: res.ok, body: { reply: text } };
+    try {
+      const res = await fetch(CHAT_PROXY_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const contentType = res.headers.get("content-type") || "";
+      if (contentType.includes("application/json")) {
+        const data = await res.json();
+        return { ok: res.ok, body: data };
+      } else {
+        const text = await res.text();
+        return { ok: res.ok, body: { reply: text } };
+      }
+    } catch (err) {
+      console.error(err);
+      return { ok: false, body: { reply: null } };
     }
   };
 
+  // Send message
   const sendMessage = async (text) => {
     const query = (text || "").trim();
     if (!query) return;
+
     setMessages((prev) => [...prev, { type: "user", text: query }, { type: "bot", text: "" }]);
     setInputText("");
     setIsProcessing(true);
 
-    const rule = getRuleBasedAnswer(query);
-    if (rule) {
-      await typeText(rule);
+    // Rule-based quick answer
+    const ruleAnswer = getRuleBasedAnswer(query);
+    if (ruleAnswer) {
+      await typeText(ruleAnswer);
       setIsProcessing(false);
       return;
     }
@@ -144,16 +151,15 @@ const Chatbot = () => {
         const data = result.body;
         const reply =
           (data && (data.reply || data.response || data.content)) ||
-          (data && data.choices && Array.isArray(data.choices) && data.choices[0]?.message?.content) ||
-          JSON.stringify(data, null, 2);
-        await typeText(String(reply));
+          (data?.choices?.[0]?.message?.content) ||
+          "🤖 Sorry, I couldn't understand that.";
+        await typeText(reply);
       } else {
-        const body = result.body;
-        const errText = (body && (body.error || body.message || body.reply)) || `Server returned ${result.status || "error"}`;
-        await typeText(`⚠️ Server Error: ${errText}`);
+        await typeText("⚠️ Scooby is offline: API limit reached or server unavailable.");
       }
     } catch (err) {
-      await typeText("❌ Network Error: Unable to reach chat service.");
+      console.error(err);
+      await typeText("❌ Network Error: Scooby is offline, try again later.");
     } finally {
       setIsProcessing(false);
     }
@@ -163,67 +169,35 @@ const Chatbot = () => {
     if (e.key === "Enter" && inputText.trim() && !isProcessing) sendMessage(inputText);
   };
 
-  // --- RESIZE LOGIC ---
+  // Manual resize
   useEffect(() => {
     const onMove = (ev) => {
-      if (!resizingRef.current || !chatBoxRef.current) return;
-      const box = chatBoxRef.current.getBoundingClientRect();
-      const dir = resizeDirRef.current;
-      const minW = 280, minH = 380, maxW = 900, maxH = 900;
-      let newSize = { ...size };
-      let newPos = { ...position };
-
-      if (dir.includes("right")) newSize.width = Math.min(maxW, Math.max(minW, ev.clientX - box.left));
-      if (dir.includes("bottom")) newSize.height = Math.min(maxH, Math.max(minH, ev.clientY - box.top));
-      if (dir.includes("left")) {
-        const diff = ev.clientX - box.left;
-        newSize.width = Math.min(maxW, Math.max(minW, box.width - diff));
-        newPos.x = position.x + diff;
-      }
-      if (dir.includes("top")) {
-        const diff = ev.clientY - box.top;
-        newSize.height = Math.min(maxH, Math.max(minH, box.height - diff));
-        newPos.y = position.y + diff;
-      }
-
-      setSize(newSize);
-      setPosition(newPos);
-      localStorage.setItem("chatbotSize", JSON.stringify(newSize));
-      localStorage.setItem("chatbotPos", JSON.stringify(newPos));
+      if (!resizingRef.current) return;
+      const box = chatBoxRef.current?.getBoundingClientRect();
+      if (!box) return;
+      const newW = Math.max(280, ev.clientX - box.left);
+      const newH = Math.max(380, ev.clientY - box.top);
+      setSize({ width: Math.min(newW, 900), height: Math.min(newH, 900) });
     };
-
     const onUp = () => {
       resizingRef.current = false;
-      resizeDirRef.current = null;
       document.body.style.cursor = "default";
     };
-
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
     return () => {
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onUp);
     };
-  }, [size, position]);
+  }, []);
 
-  const startResize = (ev, dir) => {
+  const startResize = (ev) => {
     ev.preventDefault();
     resizingRef.current = true;
-    resizeDirRef.current = dir;
-    const cursorMap = {
-      top: "ns-resize",
-      bottom: "ns-resize",
-      left: "ew-resize",
-      right: "ew-resize",
-      "top-left": "nwse-resize",
-      "top-right": "nesw-resize",
-      "bottom-left": "nesw-resize",
-      "bottom-right": "nwse-resize",
-    };
-    document.body.style.cursor = cursorMap[dir] || "default";
+    document.body.style.cursor = "nwse-resize";
   };
 
-  // --- RENDER MESSAGE ---
+  // Render message bubble
   const renderMessage = (msg) => {
     const bubbleClasses =
       msg.type === "user"
@@ -234,7 +208,11 @@ const Chatbot = () => {
       <div className={bubbleClasses}>
         {msg.type === "bot" ? (
           <>
-            <button className="absolute top-1 right-1 text-xs text-gray-300 hover:text-white" onClick={() => copyToClipboard(msg.text)} title="Copy response">
+            <button
+              className="absolute top-1 right-1 text-xs text-gray-300 hover:text-white"
+              onClick={() => copyToClipboard(msg.text)}
+              title="Copy response"
+            >
               <FaCopy />
             </button>
             <div className="overflow-auto max-h-[60vh] pr-1">
@@ -274,15 +252,10 @@ const Chatbot = () => {
     );
   };
 
-  // --- RENDER CHATBOT ---
+  // --- RENDER ---
   return (
-    <motion.div
-      drag
-      dragMomentum={false}
-      className="fixed z-50"
-      style={{ touchAction: "none", bottom: position.y, right: position.x }}
-      onDragEnd={(e, info) => setPosition({ x: info.point.x, y: info.point.y })}
-    >
+    <motion.div drag dragMomentum={false} className="fixed bottom-4 right-3 z-50" style={{ touchAction: "none" }}>
+      {/* Floating Icon */}
       {!visible && (
         <motion.div
           className="p-3 rounded-full cursor-pointer flex items-center justify-center"
@@ -323,14 +296,7 @@ const Chatbot = () => {
                 <button onClick={() => setCompact((c) => !c)} title="Toggle compact mode" className="p-1 rounded hover:bg-gray-200/20">
                   {compact ? <FaExpand /> : <FaCompress />}
                 </button>
-                <button
-                  onClick={() => {
-                    setVisible(false);
-                    setCompact(false);
-                  }}
-                  className="p-1 rounded font-bold"
-                  title="Close"
-                >
+                <button onClick={() => setVisible(false)} className="p-1 rounded font-bold" title="Close">
                   &times;
                 </button>
               </div>
@@ -388,35 +354,25 @@ const Chatbot = () => {
               ))}
             </div>
 
-            {/* Resize Handles */}
-            {["top-left","top","top-right","right","bottom-right","bottom","bottom-left","left"].map((dir) => (
-              <div
-                key={dir}
-                onMouseDown={(e) => startResize(e, dir)}
-                role="button"
-                aria-label="Resize chat"
-                title="Drag to resize"
-                style={{
-                  position: "absolute",
-                  width: ["top","bottom"].includes(dir) ? "100%" : 12,
-                  height: ["left","right"].includes(dir) ? "100%" : 12,
-                  ...(dir.includes("top") ? { top: -6 } : dir.includes("bottom") ? { bottom: -6 } : {}),
-                  ...(dir.includes("left") ? { left: -6 } : dir.includes("right") ? { right: -6 } : {}),
-                  cursor: {
-                    "top-left":"nwse-resize",
-                    "top-right":"nesw-resize",
-                    "bottom-left":"nesw-resize",
-                    "bottom-right":"nwse-resize",
-                    top:"ns-resize",
-                    bottom:"ns-resize",
-                    left:"ew-resize",
-                    right:"ew-resize"
-                  }[dir],
-                  zIndex: 30,
-                  background: "transparent",
-                }}
-              />
-            ))}
+            {/* Resize handle */}
+            <div
+              onMouseDown={startResize}
+              role="button"
+              aria-label="Resize chat"
+              title="Drag to resize"
+              style={{
+                position: "absolute",
+                right: 4,
+                bottom: 4,
+                width: 18,
+                height: 18,
+                cursor: "nwse-resize",
+                zIndex: 30,
+                background: `linear-gradient(135deg, transparent 50%, ${NEON_BLUE} 50%)`,
+                transform: "translate(2px, 2px)",
+                borderRadius: 2,
+              }}
+            />
 
             <style>{`
               .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -427,9 +383,15 @@ const Chatbot = () => {
           </motion.div>
         )}
 
-        {/* Compact Mode */}
+        {/* Compact mode */}
         {visible && compact && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="w-56 bg-neutral-900 rounded-lg p-2 flex items-center gap-2" style={{ border: `2px solid ${NEON_BLUE}`, boxShadow: `0 0 12px ${NEON_BLUE}` }}>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="w-56 bg-neutral-900 rounded-lg p-2 flex items-center gap-2"
+            style={{ border: `2px solid ${NEON_BLUE}`, boxShadow: `0 0 12px ${NEON_BLUE}` }}
+          >
             <FaRobot color={NEON_BLUE} />
             <div className="flex-1 text-sm text-white">Scooby Doo Assistant</div>
             <div className="flex gap-1">
