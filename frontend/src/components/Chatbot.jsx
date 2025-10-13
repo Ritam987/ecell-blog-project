@@ -43,20 +43,24 @@ const Chatbot = () => {
   const [inputText, setInputText] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // size state for manual resize
-  const [size, setSize] = useState({ width: 360, height: 520 });
+  // size state for manual resize (persistent)
+  const defaultSize = { width: 360, height: 520 };
+  const [size, setSize] = useState(() => {
+    const saved = localStorage.getItem("chatbotSize");
+    return saved ? JSON.parse(saved) : defaultSize;
+  });
   const resizingRef = useRef(false);
 
   const chatEndRef = useRef(null);
   const chatBoxRef = useRef(null);
   const location = useLocation();
 
-  // always keep scroll at bottom when messages change
+  // scroll to bottom when messages change
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isProcessing, size]);
 
-  // reset on route change
+  // reset messages on route change
   useEffect(() => {
     setVisible(false);
     setMessages([
@@ -64,7 +68,7 @@ const Chatbot = () => {
     ]);
   }, [location.pathname]);
 
-  // helper: rule-based answer
+  // rule-based answer helper
   const getRuleBasedAnswer = useCallback((question) => {
     const categories = Object.values(ruleBasedQA).flat();
     const match = categories.find((qa) => qa.question.toLowerCase().trim() === question.toLowerCase().trim());
@@ -73,75 +77,58 @@ const Chatbot = () => {
 
   // copy helper
   const copyToClipboard = (text) => {
-    if (!navigator?.clipboard) {
-      alert("Clipboard API not available.");
-      return;
-    }
-    navigator.clipboard.writeText(text).then(() => {
-      // small unobtrusive feedback
-      // avoid alert noise; console + optional toast could be added
-      console.log("Copied AI response to clipboard");
-    });
+    if (!navigator?.clipboard) return;
+    navigator.clipboard.writeText(text);
   };
 
-  // handle clicking suggested question
+  // handle suggested question click
   const handleQuestionClick = (qa) => {
     if (isProcessing) return;
     setMessages((prev) => [...prev, { type: "user", text: qa.question }, { type: "bot", text: qa.answer }]);
   };
 
-  // typing animation: chunked to avoid too many state updates for extremely long texts
+  // typing animation
   const typeText = async (fullText) => {
-    // chunk size trades off performance vs visual smoothness
-    const CHUNK = 40; // increase chunk for very long texts to be faster
+    const CHUNK = 40;
     let index = 0;
-    // append progressively in chunks, then finish character-by-character for last chunk for smoothness
     while (index < fullText.length) {
       const nextIndex = Math.min(fullText.length, index + CHUNK);
       const snippet = fullText.slice(0, nextIndex);
-      // update last message text
       setMessages((prev) => {
         const copy = [...prev];
         copy[copy.length - 1] = { ...copy[copy.length - 1], text: snippet };
         return copy;
       });
       index = nextIndex;
-      // small pause between chunks (faster for short messages)
-      // if remaining length small, make a shorter pause
       await new Promise((r) => setTimeout(r, Math.max(6, Math.floor(180 / Math.sqrt(fullText.length + 1)))));
     }
   };
 
-  // robust fetch: handle JSON or plain text error body
+  // robust fetch
   const fetchReply = async (payload) => {
     const res = await fetch(CHAT_PROXY_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-
     const contentType = res.headers.get("content-type") || "";
     if (contentType.includes("application/json")) {
       const data = await res.json();
       return { ok: res.ok, body: data };
     } else {
-      // fallback: text body (could be HTML error page)
       const text = await res.text();
       return { ok: res.ok, body: { reply: text } };
     }
   };
 
-  // sendMessage: main entry
+  // sendMessage main function
   const sendMessage = async (text) => {
     const query = (text || "").trim();
     if (!query) return;
-
-    // push user + empty bot placeholder
     setMessages((prev) => [...prev, { type: "user", text: query }, { type: "bot", text: "" }]);
     setInputText("");
     setIsProcessing(true);
 
-    // rule-based quick answer
     const rule = getRuleBasedAnswer(query);
     if (rule) {
       await typeText(rule);
@@ -151,25 +138,19 @@ const Chatbot = () => {
 
     try {
       const result = await fetchReply({ message: query });
-
       if (result.ok) {
-        // data may contain reply, response, or choices etc. try to find preferred text
         const data = result.body;
-        // prefer `reply` or `response` or `content`; fallback to JSON-stringify
         const reply =
           (data && (data.reply || data.response || data.content)) ||
-          // openrouter style: choices[0].message.content
           (data && data.choices && Array.isArray(data.choices) && data.choices[0]?.message?.content) ||
           JSON.stringify(data, null, 2);
         await typeText(String(reply));
       } else {
-        // non-2xx: include message body if present
         const body = result.body;
         const errText = (body && (body.error || body.message || body.reply)) || `Server returned ${result.status || "error"}`;
         await typeText(`⚠️ Server Error: ${errText}`);
       }
     } catch (err) {
-      console.error("Chat fetch error:", err);
       await typeText("❌ Network Error: Unable to reach chat service.");
     } finally {
       setIsProcessing(false);
@@ -177,12 +158,10 @@ const Chatbot = () => {
   };
 
   const handleInputSubmit = (e) => {
-    if (e.key === "Enter" && inputText.trim() && !isProcessing) {
-      sendMessage(inputText);
-    }
+    if (e.key === "Enter" && inputText.trim() && !isProcessing) sendMessage(inputText);
   };
 
-  // manual resize: mousedown starts, window mousemove changes size, mouseup stops
+  // manual resize with persistent storage
   useEffect(() => {
     const onMove = (ev) => {
       if (!resizingRef.current) return;
@@ -190,10 +169,12 @@ const Chatbot = () => {
       if (!box) return;
       const newW = Math.max(280, ev.clientX - box.left);
       const newH = Math.max(380, ev.clientY - box.top);
-      setSize((s) => ({ width: Math.min(newW, 900), height: Math.min(newH, 900) }));
+      const newSize = { width: Math.min(newW, 900), height: Math.min(newH, 900) };
+      setSize(newSize);
+      localStorage.setItem("chatbotSize", JSON.stringify(newSize));
     };
     const onUp = () => {
-      if (resizingRef.current) resizingRef.current = false;
+      resizingRef.current = false;
       document.body.style.cursor = "default";
     };
     window.addEventListener("mousemove", onMove);
@@ -210,7 +191,7 @@ const Chatbot = () => {
     document.body.style.cursor = "nwse-resize";
   };
 
-  // message bubble renderer with markdown, codeblock handling, copy button and scroll inside bubble
+  // render chat bubbles with markdown + code
   const renderMessage = (msg) => {
     const bubbleClasses =
       msg.type === "user"
@@ -228,7 +209,6 @@ const Chatbot = () => {
             >
               <FaCopy />
             </button>
-
             <div className="overflow-auto max-h-[60vh] pr-1">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
@@ -251,8 +231,6 @@ const Chatbot = () => {
                       </code>
                     );
                   },
-                  a: ({ node, ...props }) => <a {...props} className="text-blue-300 underline" />,
-                  img: ({ node, ...props }) => <img {...props} className="max-w-full rounded my-2" />,
                 }}
               >
                 {msg.text}
@@ -266,16 +244,9 @@ const Chatbot = () => {
     );
   };
 
-  // ensure the floating icon remains visible even if chat was closed after large content
-  // (we render robot icon when visible === false)
+  // --- RENDER ---
   return (
-    <motion.div
-      drag
-      dragMomentum={false}
-      className="fixed bottom-4 right-3 z-50"
-      style={{ touchAction: "none" }}
-    >
-      {/* Floating Icon - always available when closed */}
+    <motion.div drag dragMomentum={false} className="fixed bottom-4 right-3 z-50" style={{ touchAction: "none" }}>
       {!visible && (
         <motion.div
           className="p-3 rounded-full cursor-pointer flex items-center justify-center"
@@ -307,29 +278,18 @@ const Chatbot = () => {
             }}
           >
             {/* Header */}
-            <div
-              className="px-4 py-3 font-bold text-lg flex justify-between items-center"
-              style={{ backgroundColor: NEON_BLUE, color: DARK_BG }}
-            >
+            <div className="px-4 py-3 font-bold text-lg flex justify-between items-center" style={{ backgroundColor: NEON_BLUE, color: DARK_BG }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <FaRobot color={DARK_BG} />
                 <span>Scooby Doo Assistant</span>
               </div>
-
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setCompact((c) => !c)}
-                  title="Toggle compact mode"
-                  className="p-1 rounded hover:bg-gray-200/20"
-                >
+                <button onClick={() => setCompact((c) => !c)} title="Toggle compact mode" className="p-1 rounded hover:bg-gray-200/20">
                   {compact ? <FaExpand /> : <FaCompress />}
                 </button>
-
-                {/* minimize close but not remove icon */}
                 <button
                   onClick={() => {
                     setVisible(false);
-                    // keep compact false so reopening gives full view
                     setCompact(false);
                   }}
                   className="p-1 rounded font-bold"
@@ -341,25 +301,13 @@ const Chatbot = () => {
             </div>
 
             {/* Messages */}
-            <div
-              className="flex-1 p-3 overflow-y-auto custom-scrollbar space-y-3"
-              style={{ minHeight: 0 }} // keeps flexbox scroll stable
-            >
+            <div className="flex-1 p-3 overflow-y-auto custom-scrollbar space-y-3" style={{ minHeight: 0 }}>
               {messages.map((msg, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, x: msg.type === "user" ? 30 : -30 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.18 }}
-                >
+                <motion.div key={i} initial={{ opacity: 0, x: msg.type === "user" ? 30 : -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.18 }}>
                   {renderMessage(msg)}
                 </motion.div>
               ))}
-
-              {isProcessing && (
-                <div className="text-xs text-gray-300 italic px-2">Scooby is typing...</div>
-              )}
-
+              {isProcessing && <div className="text-xs text-gray-300 italic px-2">Scooby is typing...</div>}
               <div ref={chatEndRef} />
             </div>
 
@@ -380,9 +328,7 @@ const Chatbot = () => {
                 disabled={!inputText.trim() || isProcessing}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className={`px-4 py-2 rounded-full font-semibold ${
-                  !inputText.trim() || isProcessing ? "opacity-50 cursor-not-allowed" : "bg-neonBlue text-black"
-                }`}
+                className={`px-4 py-2 rounded-full font-semibold ${!inputText.trim() || isProcessing ? "opacity-50 cursor-not-allowed" : "bg-neonBlue text-black"}`}
                 style={{ boxShadow: `0 0 10px ${NEON_BLUE}` }}
                 title="Send"
               >
@@ -397,13 +343,7 @@ const Chatbot = () => {
                   <div className="font-semibold text-white mb-1">{category}</div>
                   <div className="flex flex-wrap gap-2">
                     {qas.map((qa, i) => (
-                      <motion.button
-                        key={i}
-                        onClick={() => handleQuestionClick(qa)}
-                        whileHover={{ scale: 1.03 }}
-                        className="bg-gray-800 text-white px-3 py-1 rounded shadow-sm text-sm"
-                        style={{ border: `1px solid ${NEON_PINK}` }}
-                      >
+                      <motion.button key={i} onClick={() => handleQuestionClick(qa)} whileHover={{ scale: 1.03 }} className="bg-gray-800 text-white px-3 py-1 rounded shadow-sm text-sm" style={{ border: `1px solid ${NEON_PINK}` }}>
                         {qa.question}
                       </motion.button>
                     ))}
@@ -412,7 +352,7 @@ const Chatbot = () => {
               ))}
             </div>
 
-            {/* resize handle bottom-right */}
+            {/* Resize handle */}
             <div
               onMouseDown={startResize}
               role="button"
@@ -426,7 +366,6 @@ const Chatbot = () => {
                 height: 18,
                 cursor: "nwse-resize",
                 zIndex: 30,
-                // subtle neon corner for affordance:
                 background: `linear-gradient(135deg, transparent 50%, ${NEON_BLUE} 50%)`,
                 transform: "translate(2px, 2px)",
                 borderRadius: 2,
@@ -442,15 +381,9 @@ const Chatbot = () => {
           </motion.div>
         )}
 
-        {/* compact mode: small bar (keeps icon visible / quick open) */}
+        {/* Compact Mode */}
         {visible && compact && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            className="w-56 bg-neutral-900 rounded-lg p-2 flex items-center gap-2"
-            style={{ border: `2px solid ${NEON_BLUE}`, boxShadow: `0 0 12px ${NEON_BLUE}` }}
-          >
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="w-56 bg-neutral-900 rounded-lg p-2 flex items-center gap-2" style={{ border: `2px solid ${NEON_BLUE}`, boxShadow: `0 0 12px ${NEON_BLUE}` }}>
             <FaRobot color={NEON_BLUE} />
             <div className="flex-1 text-sm text-white">Scooby Doo Assistant</div>
             <div className="flex gap-1">
