@@ -13,7 +13,7 @@ const router = express.Router();
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY; 
 const APP_REFERER = process.env.APP_URL || 'https://ecell-blog-project.onrender.com'; 
 const APP_TITLE = "E-Cell Blog Assistant";
-const MODEL_NAME = "openai/gpt-oss-20b:free"; 
+const MODEL_NAME = "google/gemma-3-27b-it:free"; 
 const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 // --- End Configuration ---
 
