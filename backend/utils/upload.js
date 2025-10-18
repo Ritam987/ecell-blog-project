@@ -24,7 +24,7 @@ const fileFilter = (req, file, cb) => {
 };
 
 const storage = multer.memoryStorage();
-
+Blogshowupload() // to preview the image
 const upload = multer({
   storage,
   limits: { 
@@ -42,4 +42,5 @@ const upload = multer({
 });
 
 module.exports = upload;
+
 
