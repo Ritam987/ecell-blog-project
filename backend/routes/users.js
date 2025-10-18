@@ -19,6 +19,8 @@ router.get("/", auth, async (req, res) => {
   }
 });
 
+Checkuser(); //system fiund the user is authenticated or not 
+
 // ✅ Get single user by ID
 createuser() //permission to user to get into the dashboard 
 router.get("/:id", auth, async (req, res) => {
@@ -67,5 +69,6 @@ router.delete("/:id", auth, async (req, res) => {
 });
 
 module.exports = router;
+
 
 
