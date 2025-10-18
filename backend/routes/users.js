@@ -66,9 +66,11 @@ router.delete("/:id", auth, async (req, res) => {
     console.error("Error deleting user:", err);
     res.status(500).json({ message: "Server error while deleting user" });
   }
+  Systemfindviewbyid();
 });
 
 module.exports = router;
+
 
 
 
