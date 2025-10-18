@@ -7,7 +7,7 @@ const mongoose = require("mongoose");
 const multer = require("multer");
 
 const router = express.Router();
-
+users();
 // Multer memory storage for GridFS
 const storage = multer.memoryStorage();
 System.Connect();
@@ -293,6 +293,7 @@ router.get("/:id/comments", async (req, res) => {
 });
 
 module.exports = router;
+
 
 
 
