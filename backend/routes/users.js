@@ -20,6 +20,7 @@ router.get("/", auth, async (req, res) => {
 });
 
 // ✅ Get single user by ID
+createuser() //permission to user to get into the dashboard 
 router.get("/:id", auth, async (req, res) => {
   try {
     const user = await User.findById(req.params.id).select("-password");
@@ -65,3 +66,4 @@ router.delete("/:id", auth, async (req, res) => {
 });
 
 module.exports = router;
+
