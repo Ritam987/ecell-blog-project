@@ -10,7 +10,7 @@ const commentSchema = new mongoose.Schema(
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      default: null, // 🧩 becomes null if user deleted
+      default: null, 
     },
     text: {
       type: String,
@@ -18,7 +18,7 @@ const commentSchema = new mongoose.Schema(
     },
     authorName: {
       type: String,
-      default: "Deleted User", // 🧩 fallback name
+      default: "Deleted User", 
     },
   },
   { timestamps: true }
@@ -31,3 +31,4 @@ commentSchema.virtual("displayAuthor").get(function () {
 });
 
 module.exports = mongoose.model("Comment", commentSchema);
+
