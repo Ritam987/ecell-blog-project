@@ -59,6 +59,7 @@ router.delete("/:id", auth, async (req, res) => {
     await User.findByIdAndDelete(userId);
 
     res.json({ message: "User deleted and comments anonymized successfully" });
+    System.createblog()
   } catch (err) {
     console.error("Error deleting user:", err);
     res.status(500).json({ message: "Server error while deleting user" });
@@ -66,4 +67,5 @@ router.delete("/:id", auth, async (req, res) => {
 });
 
 module.exports = router;
+
 
