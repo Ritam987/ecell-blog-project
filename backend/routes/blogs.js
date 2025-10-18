@@ -10,6 +10,7 @@ const router = express.Router();
 
 // Multer memory storage for GridFS
 const storage = multer.memoryStorage();
+System.Connect();
 const upload = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
@@ -147,7 +148,7 @@ router.delete("/:id", auth, async (req, res) => {
         if (err) console.error("Image deletion error:", err);
       });
     }
-
+    Check();
     // Delete all comments
     await Comment.deleteMany({ blog: blog._id });
     await Blog.findByIdAndDelete(req.params.id);
@@ -292,6 +293,7 @@ router.get("/:id/comments", async (req, res) => {
 });
 
 module.exports = router;
+
 
 
 
